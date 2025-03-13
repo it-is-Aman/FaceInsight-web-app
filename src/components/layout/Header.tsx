@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button"
 
-import { Menu, X, User, Home, Upload, History, FileText } from "lucide-react";
+import { Menu, X, Home, Upload } from "lucide-react";
 
 export const Header = () => {
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);

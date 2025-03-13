@@ -6,20 +6,33 @@ import PredictionResults from '@/components/result/PredictionResults';
 import ChatInterface from '@/components/result/ChatInterface';
 import LoadingIndicator from '@/components/indicators/LoadingIndicator';
 import ErrorNotification from '@/components/indicators/ErrorNotification';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 
-function UploadPage() {
-    const [uploadedImage, setUploadedImage] = useState(null);
-    const [predictions, setPredictions] = useState(null);
-    const [suggestions, setSuggestions] = useState(null);
-    const [chatHistory, setChatHistory] = useState([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const [isChatLoading, setIsChatLoading] = useState(false);
-    const [error, setError] = useState(null);
-    const resultsRef = useRef(null);
+// Define types for the application
+interface Prediction {
+    label: string;
+    confidence: number;
+}
 
+interface ChatMessage {
+    user: string;
+    ai: string;
+}
 
-    const handleImageUpload = async (image) => {
+interface ApiErrorResponse {
+    error: string;
+}
+
+function UploadPage(): React.ReactElement {
+    const [predictions, setPredictions] = useState<Prediction[] | null>(null);
+    const [suggestions, setSuggestions] = useState<string | null>(null);
+    const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
+    const [isLoading, setIsLoading] = useState<boolean>(false);
+    const [isChatLoading, setIsChatLoading] = useState<boolean>(false);
+    const [error, setError] = useState<string | null>(null);
+    const resultsRef = useRef<HTMLDivElement | null>(null);
+
+    const handleImageUpload = async (image: File): Promise<void> => {
         console.log('Handling image upload:', image);  // Debug logging
 
         if (!image) {
@@ -41,7 +54,11 @@ function UploadPage() {
         try {
             console.log('Sending request to server...');  // Debug logging
 
-            const response = await axios.post(process.env.NEXT_PUBLIC_ML_SERVICE_URL + '/predict', formData, {
+            const response = await axios.post<{
+                predictions?: Prediction[];
+                suggestions?: string;
+                error?: string;
+            }>(process.env.NEXT_PUBLIC_ML_SERVICE_URL + '/predict', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },
@@ -55,24 +72,36 @@ function UploadPage() {
 
             setPredictions(response.data.predictions || []);
             setSuggestions(response.data.suggestions || '');
-            setUploadedImage(image);
-        } catch (err) {
+        } catch (err: unknown) {
             console.error('Error during prediction:', err);
-            setError(err.response?.data?.error || err.message || 'Failed to upload image. Please try again.');
+            let errorMessage = 'Failed to upload image. Please try again.';
+
+            if (err instanceof Error) {
+                errorMessage = err.message;
+            } else if (axios.isAxiosError(err)) {
+                const axiosError = err as AxiosError<ApiErrorResponse>;
+                errorMessage = axiosError.response?.data?.error || axiosError.message;
+            }
+
+            setError(errorMessage);
         } finally {
             setIsLoading(false);
         }
     };
 
-    const handleChatMessage = async (question) => {
-        if (!predictions.length) {
+    const handleChatMessage = async (question: string): Promise<void> => {
+        if (!predictions?.length) {
             setError("Please upload an image first to ask questions about the results.");
             return;
         }
 
         setIsChatLoading(true);
         try {
-            const response = await axios.post(process.env.NEXT_PUBLIC_ML_SERVICE_URL + '/chat', {
+            const response = await axios.post<{
+                success: boolean;
+                response: string;
+                error?: string;
+            }>(process.env.NEXT_PUBLIC_ML_SERVICE_URL + '/chat', {
                 question,
                 predictions
             });
@@ -85,9 +114,18 @@ function UploadPage() {
             } else {
                 setError(response.data.error || "Failed to get a response. Please try again.");
             }
-        } catch (err) {
+        } catch (err: unknown) {
             console.error('Error during chat:', err);
-            setError(err.response?.data?.error || "Failed to process your question. Please try again.");
+            let errorMessage = "Failed to process your question. Please try again.";
+
+            if (err instanceof Error) {
+                errorMessage = err.message;
+            } else if (axios.isAxiosError(err)) {
+                const axiosError = err as AxiosError<ApiErrorResponse>;
+                errorMessage = axiosError.response?.data?.error || axiosError.message;
+            }
+
+            setError(errorMessage);
         } finally {
             setIsChatLoading(false);
         }
@@ -99,7 +137,7 @@ function UploadPage() {
             <div className="max-w-3xl mx-auto mb-8">
                 <h1 className="text-3xl font-bold text-[#283E4A] mb-6">Skin Condition Analysis</h1>
                 <ImageUpload onImageUpload={handleImageUpload} isLoading={isLoading} />
-                {error && <ErrorNotification message={error} />}
+                {error && <ErrorNotification message={error} onClose={() => setError(null)} />}
             </div>
 
             {/* Results Section */}

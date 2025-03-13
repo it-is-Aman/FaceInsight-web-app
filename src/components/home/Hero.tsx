@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ArrowRight, ShieldCheck, Clock, Activity } from "lucide-react";
+import Image from "next/image";
 
 const Hero = () => {
     return (
@@ -52,7 +53,7 @@ const Hero = () => {
                             <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-accent/30 rounded-full blur-3xl opacity-30"></div>
                             <div className="relative h-full w-full overflow-hidden rounded-2xl shadow-elegant">
                                 <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent mix-blend-overlay"></div>
-                                <img
+                                <Image
                                     src="https://images.unsplash.com/photo-1522338140262-f46f5913618a?q=80&w=2784&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
                                     alt="Skin analysis"
                                     className="object-cover h-full w-full rounded-2xl opacity-90 transition-all duration-500 hover:scale-105"

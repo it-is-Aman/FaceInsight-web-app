@@ -1,16 +1,24 @@
 "use client"
 
+import Image from 'next/image';
 import React, { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 
-function ImageUpload({ onImageUpload, isLoading }) {
-    const [preview, setPreview] = useState(null);
-    const [selectedFile, setSelectedFile] = useState(null);
+interface ImageUploadProps {
+    onImageUpload: (file: File) => void;
+    isLoading: boolean;
+}
 
-    const onDrop = useCallback((acceptedFiles: File) => {
+function ImageUpload({ onImageUpload, isLoading }: ImageUploadProps): React.ReactElement {
+    const [preview, setPreview] = useState<string | null>(null);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+    const onDrop = useCallback((acceptedFiles: File[]) => {
         const file = acceptedFiles[0];
-        setSelectedFile(file);
-        setPreview(URL.createObjectURL(file));
+        if (file) {
+            setSelectedFile(file);
+            setPreview(URL.createObjectURL(file));
+        }
     }, []);
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -24,7 +32,7 @@ function ImageUpload({ onImageUpload, isLoading }) {
         disabled: isLoading
     });
 
-    const handleUpload = () => {
+    const handleUpload = (): void => {
         if (selectedFile) {
             onImageUpload(selectedFile);
         }
@@ -34,13 +42,17 @@ function ImageUpload({ onImageUpload, isLoading }) {
         <div className="text-center">
             <div
                 {...getRootProps()}
-                className={`border-2 border-dashed rounded-lg p-8 mb-4 cursor-pointer transition-colors ${isDragActive ? 'border-blue-500 bg-blue-50' : isLoading ? 'border-gray-300 bg-gray-50 cursor-not-allowed' : 'border-gray-300 hover:border-blue-400'
+                className={`border-2 border-dashed rounded-lg p-8 mb-4 cursor-pointer transition-colors ${isDragActive
+                    ? 'border-blue-500 bg-blue-50'
+                    : isLoading
+                        ? 'border-gray-300 bg-gray-50 cursor-not-allowed'
+                        : 'border-gray-300 hover:border-blue-400'
                     }`}
             >
                 <input {...getInputProps()} />
                 {preview ? (
                     <div>
-                        <img src={preview} alt="Preview" className="mx-auto max-h-64 mb-2" />
+                        <Image src={preview} alt="Preview" className="mx-auto max-h-64 mb-2" />
                         <p className="text-sm text-gray-500">
                             {selectedFile ? `Selected: ${selectedFile.name} (${(selectedFile.size / 1024).toFixed(1)} KB)` : ''}
                         </p>
@@ -92,7 +104,6 @@ function ImageUpload({ onImageUpload, isLoading }) {
                     This tool is for informational purposes only and should not replace professional medical advice.
                 </p>
             </div>
-
         </div>
     );
 }
