@@ -54,9 +54,11 @@ const Hero = () => {
                             <div className="relative h-full w-full overflow-hidden rounded-2xl shadow-elegant">
                                 <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent mix-blend-overlay"></div>
                                 <Image
-                                    src="https://images.unsplash.com/photo-1522338140262-f46f5913618a?q=80&w=2784&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+                                    src="/image/homePageImg.jpg"
                                     alt="Skin analysis"
                                     className="object-cover h-full w-full rounded-2xl opacity-90 transition-all duration-500 hover:scale-105"
+                                    width={500}
+                                    height={300}
                                 />
                                 <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent p-6 text-white">
                                     <h3 className="font-serif text-xl font-semibold">Advanced Analysis</h3>
