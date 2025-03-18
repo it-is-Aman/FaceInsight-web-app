@@ -52,7 +52,7 @@ function ImageUpload({ onImageUpload, isLoading }: ImageUploadProps): React.Reac
                 <input {...getInputProps()} />
                 {preview ? (
                     <div>
-                        <Image src={preview} alt="Preview" className="mx-auto max-h-64 mb-2" width={500} height={300} />
+                        <Image src={preview} alt="Preview" className="mx-auto max-h-64 mb-2" width={200} height={100} objectFit="contain" />
                         <p className="text-sm text-gray-500">
                             {selectedFile ? `Selected: ${selectedFile.name} (${(selectedFile.size / 1024).toFixed(1)} KB)` : ''}
                         </p>

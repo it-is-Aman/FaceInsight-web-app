@@ -62,7 +62,7 @@ const Features = () => {
                                 {feature.icon}
                             </div>
                             <div className="space-y-2">
-                                <h3 className="text-xl font-semibold">{feature.title}</h3>
+                                <h3 className="text-xl font-semibold ">{feature.title}</h3>
                                 <p className="text-muted-foreground">{feature.description}</p>
                             </div>
                         </div>

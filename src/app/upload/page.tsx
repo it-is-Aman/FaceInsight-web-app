@@ -58,7 +58,7 @@ function UploadPage(): React.ReactElement {
                 predictions?: Prediction[];
                 suggestions?: string;
                 error?: string;
-            }>(process.env.ML_SERVICE_URL + '/predict', formData, {
+            }>(process.env.NEXT_PUBLIC_ML_SERVICE_URL + '/predict', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 },
@@ -101,7 +101,7 @@ function UploadPage(): React.ReactElement {
                 success: boolean;
                 response: string;
                 error?: string;
-            }>(process.env.ML_SERVICE_URL + '/chat', {
+            }>(process.env.NEXT_PUBLIC_ML_SERVICE_URL + '/chat', {
                 question,
                 predictions
             });
