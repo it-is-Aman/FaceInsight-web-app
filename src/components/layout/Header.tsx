@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button"
 
 import { Menu, X, Home, Upload } from "lucide-react";
+import { SignedIn, SignedOut, SignInButton, SignUpButton, UserButton } from "@clerk/nextjs";
 
 export const Header = () => {
     const [isMenuOpen, setIsMenuOpen] = React.useState(false);
@@ -54,11 +55,19 @@ export const Header = () => {
                             {item.text}
                         </Link>
                     ))}
-                    <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 ml-2">
-                        <Link href="/upload" className="flex items-center justify-center">
-                            Start Analysis
-                        </Link>
-                    </Button>
+                    <SignedOut>
+                        <Button asChild size="default" variant={"outline"} className="bg-primary text-primary-foreground hover:bg-primary/70">
+                            <SignInButton />
+                        </Button>
+                        <Button asChild size="default" variant={"outline"} className="bg-primary text-primary-foreground hover:bg-primary/70">
+                            <SignUpButton />
+                        </Button>
+                    </SignedOut>
+                    <SignedIn>
+                        <Button asChild size="default" variant={"outline"} className="bg-primary text-primary-foreground hover:bg-primary/70">
+                            <UserButton />
+                        </Button>
+                    </SignedIn>
                 </nav>
 
                 {/* Mobile Navigation Toggle */}
@@ -87,12 +96,20 @@ export const Header = () => {
                                         </Link>
                                     </li>
                                 ))}
-                                <li>
-                                    <Button asChild className="w-full mt-2 bg-primary text-primary-foreground hover:bg-primary/90">
-                                        <Link href="/upload" onClick={closeMenu} className="flex items-center justify-center">
-                                            Start Analysis
-                                        </Link>
-                                    </Button>
+                                <li className=" flex items-center justify-evenly">
+                                    <SignedOut>
+                                        <Button asChild size="default" variant={"outline"} onClick={closeMenu} className="bg-primary text-primary-foreground hover:bg-primary/75">
+                                            <SignInButton />
+                                        </Button>
+                                        <Button asChild size="default" variant={"outline"} onClick={closeMenu} className="bg-primary text-primary-foreground hover:bg-primary/75">
+                                            <SignUpButton />
+                                        </Button>
+                                    </SignedOut>
+                                    <SignedIn>
+                                        <Button asChild size="default" variant={"outline"} onClick={closeMenu} className="bg-primary text-primary-foreground hover:bg-primary/75">
+                                            <UserButton />
+                                        </Button>
+                                    </SignedIn>
                                 </li>
                             </ul>
                         </nav>
