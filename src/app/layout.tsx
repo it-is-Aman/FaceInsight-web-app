@@ -1,12 +1,5 @@
 import { type Metadata } from 'next'
-import {
-  ClerkProvider,
-  SignInButton,
-  SignUpButton,
-  SignedIn,
-  SignedOut,
-  UserButton,
-} from '@clerk/nextjs'
+import { ClerkProvider } from '@clerk/nextjs'
 import { Inter, Geist, Geist_Mono } from 'next/font/google'
 import "./globals.css";
 import Header from "@/components/layout/Header";
@@ -37,15 +30,15 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en" className="h-full">
         <body className={`${inter.className} min-h-screen flex flex-col`}>
-          <div className="flex flex-col min-h-screen">
+          <div className={`${geistMono.className} flex flex-col min-h-screen`}>
             <Header />
-            <main className="flex-grow">
+            <main className={`${geistSans.className} flex-grow`}>
               {children}
             </main>
             <Footer />
           </div>
         </body>
       </html>
-    </ClerkProvider>
+    </ClerkProvider >
   );
 }

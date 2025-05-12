@@ -6,7 +6,7 @@ function PredictionResults({ predictions, suggestions }) {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 ">
       {/* Predictions Section */}
       <div>
         <h3 className="text-xl font-semibold mb-4">Detected Conditions</h3>
@@ -14,7 +14,7 @@ function PredictionResults({ predictions, suggestions }) {
           {predictions.map((prediction, index) => (
             <div 
               key={index} 
-              className="bg-white rounded-lg shadow-md p-6 border border-gray-200 hover:shadow-lg transition-shadow"
+              className="bg-white rounded-lg shadow-md p-6 border border-gray-200 hover:shadow-lg transition-shadow dark:bg-gray-300"
             >
               <h4 className="text-lg font-semibold text-blue-600 mb-2">
                 {prediction.disease}
@@ -42,7 +42,7 @@ function PredictionResults({ predictions, suggestions }) {
       {suggestions && (
         <div>
           <h3 className="text-xl font-semibold mb-4">Treatment Suggestions</h3>
-          <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200">
+          <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200 dark:bg-gray-300">
             <div className="prose max-w-none">
               {suggestions.split('\n').map((paragraph, index) => (
                 paragraph.trim() && (
