@@ -2,6 +2,8 @@ import { type Metadata } from 'next'
 import { ClerkProvider } from '@clerk/nextjs'
 import { Inter, Geist, Geist_Mono } from 'next/font/google'
 import "./globals.css";
+import { PostHogProvider } from './providers'
+
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 
@@ -30,13 +32,15 @@ export default function RootLayout({
     <ClerkProvider>
       <html lang="en" className="h-full">
         <body className={`${inter.className} min-h-screen flex flex-col`}>
-          <div className={`${geistMono.className} flex flex-col min-h-screen`}>
-            <Header />
-            <main className={`${geistSans.className} flex-grow`}>
-              {children}
-            </main>
-            <Footer />
-          </div>
+          <PostHogProvider>
+            <div className={`${geistMono.className} flex flex-col min-h-screen`}>
+              <Header />
+              <main className={`${geistSans.className} flex-grow`}>
+                {children}
+              </main>
+              <Footer />
+            </div>
+          </PostHogProvider>
         </body>
       </html>
     </ClerkProvider >
