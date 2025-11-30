@@ -55,8 +55,7 @@ export async function POST(req: Request) {
                 },
                 customer: {
                     email: user.emailAddresses[0].emailAddress,
-                    name: `${user.firstName} ${user.lastName}`,
-                    customer_id: userId // Pass Clerk User ID as customer_id or metadata
+                    name: `${user.firstName} ${user.lastName}`
                 },
                 metadata: {
                     userId: userId,
