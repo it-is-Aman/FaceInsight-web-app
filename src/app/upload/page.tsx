@@ -7,6 +7,9 @@ import ChatInterface from '@/components/result/ChatInterface';
 import LoadingIndicator from '@/components/indicators/LoadingIndicator';
 import ErrorNotification from '@/components/indicators/ErrorNotification';
 import axios, { AxiosError } from 'axios';
+import { useUser, useClerk } from '@clerk/nextjs';
+import PricingModal from '@/components/payment/PricingModal';
+import { useRouter } from 'next/navigation';
 
 // Define types for the application
 interface Prediction {
@@ -30,7 +33,11 @@ function UploadPage(): React.ReactElement {
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [isChatLoading, setIsChatLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
+    const [showPricingModal, setShowPricingModal] = useState(false);
     const resultsRef = useRef<HTMLDivElement | null>(null);
+    const { user, isLoaded } = useUser();
+    const { openSignIn } = useClerk();
+    const router = useRouter();
 
     const handleImageUpload = async (image: File): Promise<void> => {
         console.log('Handling image upload:', image);  // Debug logging
@@ -42,6 +49,29 @@ function UploadPage(): React.ReactElement {
 
         setIsLoading(true);
         setError(null);
+
+        // Check limits
+        if (isLoaded) {
+            if (!user) {
+                // Guest User
+                const guestUsage = parseInt(localStorage.getItem('guest_usage') || '0');
+                if (guestUsage >= 1) {
+                    setIsLoading(false);
+                    openSignIn();
+                    return;
+                }
+            } else {
+                // Logged in User
+                const subscriptionExpiresAt = user.publicMetadata.subscriptionExpiresAt as number | undefined;
+                const now = Date.now();
+
+                if (!subscriptionExpiresAt || subscriptionExpiresAt < now) {
+                    setIsLoading(false);
+                    setShowPricingModal(true);
+                    return;
+                }
+            }
+        }
 
         // Clear previous results and chat history when uploading new image
         setPredictions(null);
@@ -72,6 +102,12 @@ function UploadPage(): React.ReactElement {
 
             setPredictions(response.data.predictions || []);
             setSuggestions(response.data.suggestions || '');
+
+            // Increment guest usage if not logged in
+            if (!user) {
+                const currentUsage = parseInt(localStorage.getItem('guest_usage') || '0');
+                localStorage.setItem('guest_usage', (currentUsage + 1).toString());
+            }
         } catch (err: unknown) {
             console.error('Error during prediction:', err);
             let errorMessage = 'Failed to upload image. Please try again.';
@@ -138,6 +174,7 @@ function UploadPage(): React.ReactElement {
                 <h1 className="text-3xl font-bold text-[#283E4A] mb-6">Skin Condition Analysis</h1>
                 <ImageUpload onImageUpload={handleImageUpload} isLoading={isLoading} />
                 {error && <ErrorNotification message={error} onClose={() => setError(null)} />}
+                <PricingModal isOpen={showPricingModal} onClose={() => setShowPricingModal(false)} />
             </div>
 
             {/* Results Section */}
