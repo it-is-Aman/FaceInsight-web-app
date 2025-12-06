@@ -54,8 +54,8 @@ function UploadPage(): React.ReactElement {
         if (isLoaded) {
             if (!user) {
                 // Guest User
-                const guestUsage = parseInt(localStorage.getItem('guest_usage') || '0');
-                if (guestUsage >= 1) {
+                const guestToken = localStorage.getItem('guest_token');
+                if (guestToken) {
                     setIsLoading(false);
                     openSignIn();
                     return;
@@ -84,13 +84,17 @@ function UploadPage(): React.ReactElement {
         try {
             console.log('Sending request to server...');  // Debug logging
 
+            const guestToken = localStorage.getItem('guest_token');
+
             const response = await axios.post<{
                 predictions?: Prediction[];
                 suggestions?: string;
                 error?: string;
-            }>(process.env.NEXT_PUBLIC_ML_SERVICE_URL + '/predict', formData, {
+                guestToken?: string;
+            }>('/api/predict', formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
+                    'x-guest-token': guestToken || '',
                 },
             });
 
@@ -103,10 +107,9 @@ function UploadPage(): React.ReactElement {
             setPredictions(response.data.predictions || []);
             setSuggestions(response.data.suggestions || '');
 
-            // Increment guest usage if not logged in
-            if (!user) {
-                const currentUsage = parseInt(localStorage.getItem('guest_usage') || '0');
-                localStorage.setItem('guest_usage', (currentUsage + 1).toString());
+            // Save new guest token if provided
+            if (response.data.guestToken) {
+                localStorage.setItem('guest_token', response.data.guestToken);
             }
         } catch (err: unknown) {
             console.error('Error during prediction:', err);
@@ -115,6 +118,10 @@ function UploadPage(): React.ReactElement {
             if (err instanceof Error) {
                 errorMessage = err.message;
             } else if (axios.isAxiosError(err)) {
+                if (err.response?.status === 403) {
+                    openSignIn();
+                    return;
+                }
                 const axiosError = err as AxiosError<ApiErrorResponse>;
                 errorMessage = axiosError.response?.data?.error || axiosError.message;
             }
