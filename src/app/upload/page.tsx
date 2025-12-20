@@ -9,7 +9,7 @@ import ErrorNotification from '@/components/indicators/ErrorNotification';
 import axios, { AxiosError } from 'axios';
 import { useUser, useClerk } from '@clerk/nextjs';
 import PricingModal from '@/components/payment/PricingModal';
-import { useRouter } from 'next/navigation';
+// import { useRouter } from 'next/navigation';
 import { checkSubscriptionStatus } from '@/app/actions/subscription';
 
 // Define types for the application

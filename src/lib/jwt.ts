@@ -21,6 +21,7 @@ export async function verifyGuestToken(token: string): Promise<GuestTokenPayload
         const { payload } = await jwtVerify(token, key);
         return payload as unknown as GuestTokenPayload;
     } catch (error) {
+        console.error('Failed to verify guest token:', error);
         return null;
     }
 }

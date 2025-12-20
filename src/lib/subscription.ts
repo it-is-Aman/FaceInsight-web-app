@@ -82,7 +82,7 @@ export async function getUserSubscription(userId: string) {
 export async function canUserPredict(userId: string): Promise<{
     canPredict: boolean;
     remainingPredictions: number;
-    subscription: any | null;
+    subscription: unknown | null;
 }> {
     const subscription = await getUserSubscription(userId);
 
@@ -162,7 +162,7 @@ export async function createSubscription(
  */
 export async function recordPrediction(
     userId: string,
-    predictionResult: any,
+    predictionResult: string,
     imageUrl?: string
 ) {
     await prisma.predictionHistory.create({
