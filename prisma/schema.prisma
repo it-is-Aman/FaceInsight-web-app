@@ -1,0 +1,63 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider   = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Users Table - Synced from Clerk authentication
+model User {
+  user_id       String   @id // Clerk user ID
+  email         String   @unique
+  password_hash String? // Optional since we use Clerk
+  name          String?
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  // Relations
+  subscriptions      Subscription[]
+  prediction_history PredictionHistory[]
+
+  @@map("users")
+}
+
+// Subscriptions Table - Track user subscription plans
+model Subscription {
+  subscription_id   String    @id @default(cuid())
+  user_id           String
+  plan_type         String // 'basic', 'pro', 'enterprise', '2days', '7days'
+  predictions_limit Int // Total allowed predictions
+  predictions_used  Int       @default(0) // Current usage count
+  purchase_date     DateTime  @default(now())
+  expiry_date       DateTime? // Null for unlimited plans
+  status            String    @default("active") // 'active', 'expired', 'cancelled'
+  payment_id        String? // Dodo payment reference
+
+  // Relations
+  user User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([status])
+  @@map("subscriptions")
+}
+
+// Prediction History Table - Track all predictions
+model PredictionHistory {
+  prediction_id     String   @id @default(cuid())
+  user_id           String
+  image_url         String? // Optional: store image URL if needed
+  prediction_result String   @db.Text // JSON string of prediction results
+  created_at        DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([created_at])
+  @@map("prediction_history")
+}

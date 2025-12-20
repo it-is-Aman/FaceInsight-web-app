@@ -6,10 +6,14 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:studio": "prisma studio"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.18.4",
+    "@prisma/client": "6.11.1",
     "@radix-ui/react-slot": "^1.1.2",
     "axios": "^1.8.2",
     "class-variance-authority": "^0.7.1",
@@ -17,11 +21,13 @@
     "dodopayments": "^2.6.1",
     "jose": "^6.1.3",
     "lucide-react": "^0.479.0",
-    "next": "15.2.1",
+    "next": "15.4.5",
     "posthog-js": "^1.245.1",
+    "prisma": "6.11.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-dropzone": "^14.3.8",
+    "svix": "^1.82.0",
     "tailwind-merge": "^3.0.2",
     "tailwindcss-animate": "^1.0.7"
   },

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@clerk/nextjs/server';
+import { auth, currentUser } from '@clerk/nextjs/server';
 import { signGuestToken, verifyGuestToken } from '@/lib/jwt';
+import { getOrCreateUser, canUserPredict, incrementPredictionCount, recordPrediction } from '@/lib/subscription';
 
 export async function POST(req: NextRequest) {
     try {
@@ -21,6 +22,28 @@ export async function POST(req: NextRequest) {
             if (currentCount >= 1) {
                 return NextResponse.json({ error: 'Guest limit reached. Please login.' }, { status: 403 });
             }
+        } else {
+            // Logged-in user: Check database subscription
+            const user = await currentUser();
+            if (!user) {
+                return NextResponse.json({ error: 'User not found' }, { status: 401 });
+            }
+
+            // Ensure user exists in database
+            await getOrCreateUser(user);
+
+            // Check if user can predict
+            const { canPredict } = await canUserPredict(userId);
+
+            if (!canPredict) {
+                return NextResponse.json(
+                    {
+                        error: 'No predictions remaining. Please purchase a plan.',
+                        remainingPredictions: 0
+                    },
+                    { status: 403 }
+                );
+            }
         }
 
         // 2. Forward to ML Service
@@ -31,14 +54,9 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'ML Service URL not configured' }, { status: 500 });
         }
 
-        // We need to construct a new FormData to forward, or pass the incoming one?
-        // fetch accepts the FormData from req.formData() directly.
-
         const response = await fetch(`${mlServiceUrl}/predict`, {
             method: 'POST',
             body: formData,
-            // Note: Do NOT set Content-Type header when sending FormData, 
-            // the browser/fetch will set it with the boundary.
         });
 
         if (!response.ok) {
@@ -46,7 +64,7 @@ export async function POST(req: NextRequest) {
             let errorJson;
             try {
                 errorJson = JSON.parse(errorText);
-            } catch (e) {
+            } catch {
                 errorJson = { error: errorText || 'ML Service Error' };
             }
             return NextResponse.json(errorJson, { status: response.status });
@@ -54,7 +72,16 @@ export async function POST(req: NextRequest) {
 
         const data = await response.json();
 
-        // 3. Generate New Guest Token if guest
+        // 3. Record prediction and update counts
+        if (userId) {
+            // Increment prediction count for logged-in users
+            await incrementPredictionCount(userId);
+
+            // Record prediction in history
+            await recordPrediction(userId, data.predictions || data);
+        }
+
+        // 4. Generate New Guest Token if guest
         let newToken = null;
         if (!userId) {
             newToken = await signGuestToken({ count: currentCount + 1 });

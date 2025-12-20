@@ -10,6 +10,7 @@ import axios, { AxiosError } from 'axios';
 import { useUser, useClerk } from '@clerk/nextjs';
 import PricingModal from '@/components/payment/PricingModal';
 import { useRouter } from 'next/navigation';
+import { checkSubscriptionStatus } from '@/app/actions/subscription';
 
 // Define types for the application
 interface Prediction {
@@ -37,7 +38,7 @@ function UploadPage(): React.ReactElement {
     const resultsRef = useRef<HTMLDivElement | null>(null);
     const { user, isLoaded } = useUser();
     const { openSignIn } = useClerk();
-    const router = useRouter();
+
 
     const handleImageUpload = async (image: File): Promise<void> => {
         console.log('Handling image upload:', image);  // Debug logging
@@ -62,12 +63,20 @@ function UploadPage(): React.ReactElement {
                 }
             } else {
                 // Logged in User
-                const subscriptionExpiresAt = user.publicMetadata.subscriptionExpiresAt as number | undefined;
-                const now = Date.now();
+                // Check Subscription via Server Action
+                try {
+                    const status = await checkSubscriptionStatus();
 
-                if (!subscriptionExpiresAt || subscriptionExpiresAt < now) {
+                    if (!status.canPredict) {
+                        console.log("No active subscription or limit reached");
+                        setIsLoading(false);
+                        setShowPricingModal(true);
+                        return;
+                    }
+                } catch (err) {
+                    console.error("Failed to check subscription:", err);
                     setIsLoading(false);
-                    setShowPricingModal(true);
+                    setError("Failed to verify subscription status. Please try again.");
                     return;
                 }
             }
@@ -118,9 +127,19 @@ function UploadPage(): React.ReactElement {
             if (err instanceof Error) {
                 errorMessage = err.message;
             } else if (axios.isAxiosError(err)) {
+                // If 403 Forbidden
                 if (err.response?.status === 403) {
-                    openSignIn();
-                    return;
+                    // If user is logged in, it means they need a subscription
+                    if (user) {
+                        console.log("User is logged in but 403 returned - showing pricing modal");
+                        setShowPricingModal(true);
+                        return;
+                    }
+                    // If guest, they need to login
+                    else {
+                        openSignIn();
+                        return;
+                    }
                 }
                 const axiosError = err as AxiosError<ApiErrorResponse>;
                 errorMessage = axiosError.response?.data?.error || axiosError.message;

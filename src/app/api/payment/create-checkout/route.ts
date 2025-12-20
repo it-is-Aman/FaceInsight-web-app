@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth, currentUser } from '@clerk/nextjs/server';
 import axios from 'axios';
+import { getOrCreateUser } from '@/lib/subscription';
 
 export async function POST(req: Request) {
     try {
@@ -11,23 +12,22 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
+        // Ensure user exists in our database before starting checkout
+        await getOrCreateUser(user);
+
         const { plan } = await req.json();
 
         let productId;
-        let price;
-        let productName;
 
         // Map plan to product details
         // In a real app, these should be in a config or DB
         if (plan === '2days') {
             productId = process.env.DODO_PAYMENTS_PRODUCT_ID_2DAYS;
-            price = 400; // $4.00 in cents if Dodo uses cents, or just 4 if dollars. 
-            // Dodo Payments usually takes amount in smallest currency unit or just amount. 
-            // Based on search, it takes product_id. So price is determined by product_id usually.
-            productName = '2 Days Access';
+            // price = 400; 
+            // productName = '2 Days Access';
         } else if (plan === '7days') {
             productId = process.env.DODO_PAYMENTS_PRODUCT_ID_7DAYS;
-            productName = '7 Days Access';
+            // productName = '7 Days Access';
         } else {
             return NextResponse.json({ error: 'Invalid plan' }, { status: 400 });
         }
@@ -73,8 +73,11 @@ export async function POST(req: Request) {
 
         return NextResponse.json({ url: response.data.checkout_url });
 
-    } catch (error: any) {
-        console.error('Payment creation failed:', error.response?.data || error.message);
+    } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        const errorResponse = axios.isAxiosError(error) ? error.response?.data : null;
+
+        console.error('Payment creation failed:', errorResponse || errorMessage);
         return NextResponse.json(
             { error: 'Failed to create payment session' },
             { status: 500 }
