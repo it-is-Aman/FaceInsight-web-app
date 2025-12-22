@@ -22,7 +22,7 @@
     "dodopayments": "^2.6.1",
     "jose": "^6.1.3",
     "lucide-react": "^0.479.0",
-    "next": "15.4.5",
+    "next": "15.4.8",
     "posthog-js": "^1.245.1",
     "prisma": "6.11.1",
     "react": "^19.0.0",
