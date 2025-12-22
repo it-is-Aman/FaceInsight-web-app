@@ -31,7 +31,7 @@ export async function getOrCreateUser(clerkUser: ClerkUser) {
             data: {
                 user_id: userId,
                 plan_type: 'free',
-                predictions_limit: 1,
+                predictions_limit: 10,
                 predictions_used: 0,
                 expiry_date: null,
                 status: 'active',
