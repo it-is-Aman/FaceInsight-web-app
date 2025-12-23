@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import ImageUpload from '@/components/upload/Imageupload';
 import PredictionResults from '@/components/result/PredictionResults';
 import ChatInterface from '@/components/result/ChatInterface';
@@ -11,6 +11,8 @@ import { useUser, useClerk } from '@clerk/nextjs';
 import PricingModal from '@/components/payment/PricingModal';
 // import { useRouter } from 'next/navigation';
 import { checkSubscriptionStatus } from '@/app/actions/subscription';
+import GeminiThinking from '@/components/indicators/GeminiThinking';
+
 
 // Define types for the application
 interface Prediction {
@@ -38,6 +40,37 @@ function UploadPage(): React.ReactElement {
     const resultsRef = useRef<HTMLDivElement | null>(null);
     const { user, isLoaded } = useUser();
     const { openSignIn } = useClerk();
+
+    // const [requestId, setRequestId] = useState<string | null>(null);
+    const pollRef = useRef<NodeJS.Timeout | null>(null);
+
+    useEffect(() => {
+        return () => {
+            if (pollRef.current) clearInterval(pollRef.current);
+        };
+    }, []);
+
+
+    const startPolling = (id: string) => {
+        if (pollRef.current) clearInterval(pollRef.current);
+
+        pollRef.current = setInterval(async () => {
+            try {
+                const res = await axios.get(`/api/suggestions/${id}`);
+
+                if (res.data.status === 'completed') {
+                    setSuggestions(res.data.suggestions || '');
+                    clearInterval(pollRef.current!);
+                    pollRef.current = null;
+                }
+            } catch (err) {
+                console.error('Polling error:', err);
+                clearInterval(pollRef.current!);
+                pollRef.current = null;
+            }
+        }, 2000);
+    };
+
 
 
     const handleImageUpload = async (image: File): Promise<void> => {
@@ -99,6 +132,7 @@ function UploadPage(): React.ReactElement {
                 predictions?: Prediction[];
                 suggestions?: string;
                 error?: string;
+                request_id?: string;
                 guestToken?: string;
             }>('/api/predict', formData, {
                 headers: {
@@ -107,14 +141,20 @@ function UploadPage(): React.ReactElement {
                 },
             });
 
-            console.log('Server response:', response.data);  // Debug logging
+            // console.log('Server response:', response.data);  // Debug logging
 
             if (response.data.error) {
                 throw new Error(response.data.error);
             }
 
             setPredictions(response.data.predictions || []);
-            setSuggestions(response.data.suggestions || '');
+            // setRequestId(response.data.request_id || null);
+
+            if (response.data.request_id) {
+                startPolling(response.data.request_id);
+            }
+
+
 
             // Save new guest token if provided
             if (response.data.guestToken) {
@@ -212,7 +252,15 @@ function UploadPage(): React.ReactElement {
                         <div className="grid md:grid-cols-2 gap-8">
                             {/* Left Column: Prediction Results */}
                             <div className="space-y-6">
-                                <PredictionResults predictions={predictions} suggestions={suggestions} />
+                                <PredictionResults
+                                    predictions={predictions}
+                                    suggestions={suggestions}
+                                />
+
+                                {suggestions === null && (
+                                    <GeminiThinking />
+                                )}
+
                             </div>
 
                             {/* Right Column: Chat Interface */}
