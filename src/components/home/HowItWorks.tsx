@@ -36,7 +36,7 @@ const HowItWorks = () => {
   ];
 
   return (
-    <section className="w-full py-12 md:py-24 lg:py-32 bg-white dark:bg-gray-950">
+    <section id="how-it-works" className="w-full py-12 md:py-24 lg:py-32 bg-white dark:bg-gray-950">
       <div className="container">
         <div className="flex flex-col items-center justify-center space-y-4 text-center">
           <div className="space-y-4 max-w-3xl">
@@ -44,7 +44,7 @@ const HowItWorks = () => {
               Simple Process
             </div>
             <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-              How FaceCare AI Works
+              How FaceInsight AI Works
             </h2>
             <p className="max-w-[700px] mx-auto text-muted-foreground text-lg md:text-xl/relaxed">
               Get accurate skin analysis in just a few simple steps.
@@ -54,27 +54,27 @@ const HowItWorks = () => {
 
         <div className="relative mt-20">
           {/* Connecting Line */}
-          <div className="absolute top-24 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent hidden md:block"></div>
+          <div className="absolute top-24 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent hidden md:block" aria-hidden="true"></div>
 
-          <div className="grid grid-cols-1 gap-12 md:grid-cols-4">
+          <ol className="grid grid-cols-1 gap-12 md:grid-cols-4" role="list">
             {steps.map((step, index) => (
-              <div
+              <li
                 key={index}
                 className="flex flex-col items-center text-center relative group"
               >
-                <div className="relative z-10 flex h-16 w-16 items-center justify-center rounded-full bg-primary text-white mb-8 shadow-md group-hover:scale-110 transition-transform duration-300">
+                <div className="relative z-10 flex h-16 w-16 items-center justify-center rounded-full bg-primary text-white mb-8 shadow-md group-hover:scale-110 transition-transform duration-300" aria-hidden="true">
                   {step.icon}
                 </div>
-                <div className="absolute top-0 -left-2 text-8xl font-bold text-gray-100 dark:text-gray-900 opacity-60 z-0 font-display">
+                <div className="absolute top-0 -left-2 text-8xl font-bold text-gray-100 dark:text-gray-900 opacity-60 z-0 font-display" aria-hidden="true">
                   {step.number}
                 </div>
                 <div className="space-y-3">
                   <h3 className="text-2xl font-semibold">{step.title}</h3>
                   <p className="text-muted-foreground">{step.description}</p>
                 </div>
-              </div>
+              </li>
             ))}
-          </div>
+          </ol>
         </div>
 
         <div className="flex justify-center mt-20">

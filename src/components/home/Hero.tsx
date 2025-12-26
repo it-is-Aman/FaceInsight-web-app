@@ -55,10 +55,11 @@ const Hero = () => {
                                 <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent mix-blend-overlay"></div>
                                 <Image
                                     src="/image/homePageImg.jpg"
-                                    alt="Skin analysis"
+                                    alt="AI-powered skin analysis showing a person receiving personalized skincare recommendations through FaceInsight AI technology"
                                     className="object-cover h-full w-full rounded-2xl opacity-90 transition-all duration-500 hover:scale-105"
                                     width={500}
                                     height={300}
+                                    priority
                                 />
                                 <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent p-6 text-white">
                                     <h3 className="font-serif text-xl font-semibold">Advanced Analysis</h3>

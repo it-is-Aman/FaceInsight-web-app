@@ -37,7 +37,7 @@ const Features = () => {
     ];
 
     return (
-        <section className="w-full py-12 md:py-24 lg:py-32 bg-secondary/50">
+        <section id="features" className="w-full py-12 md:py-24 lg:py-32 bg-secondary/50">
             <div className="container">
                 <div className="flex flex-col items-center justify-center space-y-4 text-center">
                     <div className="space-y-4 max-w-3xl">
@@ -54,18 +54,18 @@ const Features = () => {
                 </div>
                 <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 mt-12">
                     {features.map((feature, index) => (
-                        <div
+                        <article
                             key={index}
                             className="feature-card flex flex-col items-start gap-4 h-full"
                         >
-                            <div className="rounded-full bg-primary/10 p-3 shadow-sm">
+                            <div className="rounded-full bg-primary/10 p-3 shadow-sm" aria-hidden="true">
                                 {feature.icon}
                             </div>
                             <div className="space-y-2">
-                                <h3 className="text-xl font-semibold ">{feature.title}</h3>
+                                <h3 className="text-xl font-semibold">{feature.title}</h3>
                                 <p className="text-muted-foreground">{feature.description}</p>
                             </div>
-                        </div>
+                        </article>
                     ))}
                 </div>
                 <div className="flex justify-center mt-16">
