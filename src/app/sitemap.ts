@@ -1,5 +1,6 @@
 import { MetadataRoute } from 'next';
 import { siteConfig } from '@/lib/seo';
+import { skinConditions } from '@/lib/conditions';
 
 /**
  * Dynamic sitemap generation for SEO
@@ -28,19 +29,30 @@ export default function sitemap(): MetadataRoute.Sitemap {
             changeFrequency: 'weekly',
             priority: 0.9,
         },
+        {
+            url: `${baseUrl}/privacy`,
+            lastModified: new Date(),
+            changeFrequency: 'monthly',
+            priority: 0.3,
+        },
+        {
+            url: `${baseUrl}/terms`,
+            lastModified: new Date(),
+            changeFrequency: 'monthly',
+            priority: 0.3,
+        },
     ];
 
-    // TODO: Add dynamic pages here when you have them
-    // For example, if you add skin condition pages:
-    // const conditionPages = skinConditions.map(condition => ({
-    //   url: `${baseUrl}/conditions/${condition.slug}`,
-    //   lastModified: condition.updatedAt,
-    //   changeFrequency: 'monthly' as const,
-    //   priority: 0.7,
-    // }));
+    // Programmatic condition pages
+    const conditionPages: MetadataRoute.Sitemap = skinConditions.map((condition) => ({
+        url: `${baseUrl}/conditions/${condition.slug}`,
+        lastModified: new Date(),
+        changeFrequency: 'monthly',
+        priority: 0.7,
+    }));
 
     return [
         ...staticPages,
-        // ...conditionPages,
+        ...conditionPages,
     ];
 }
