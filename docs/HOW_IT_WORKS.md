@@ -74,7 +74,7 @@ What happens when a user clicks **Analyze photo**:
 6. **Allowance check:**
    - *Signed in:* `consumeCredit()` atomically takes one credit, or returns `402 NO_CREDITS`.
    - *Guest:* count this guest's uploads in the last 24 h by cookie id **or** IP hash; if ≥ 1, return `401 SIGN_IN_REQUIRED`.
-7. **Call the ML service:** `predict()` sends the image (base64) and the API key to the Space's Gradio `analyze` endpoint, with a 90 s timeout (enough for a cold start).
+7. **Call the ML service:** `predict()` sends the image (base64) and the API key to the Space's Gradio `analyze` endpoint, with a 50 s timeout (Vercel Hobby caps functions at 60 s).
 8. **The ML service:** decodes the image → applies EXIF rotation → YuNet checks there's a face → preprocesses → ResNet-50 in ONNX Runtime → softmax → returns the top 3 labels.
 9. **Save:** an `Analysis` row stores the predictions (never the photo), and the server returns `{ id }`.
    - If anything in steps 7–9 fails, `refundCredit()` returns the credit.
@@ -278,7 +278,7 @@ GET  /gradio_api/call/analyze/<event_id>   → Server-Sent Events, ending in:
 
 **Model file:** `scripts/build_space.sh` bundles `model.onnx` (100 MB) into the upload, and Hugging Face stores large files automatically. Alternatively, set `MODEL_URL` and `app/model_store.py` downloads it on start with a **pinned SHA-256 check**. In the GitHub repo the model is tracked with **Git LFS**.
 
-**Sleeping:** free Spaces sleep after about 48 h without visitors. We handle wake-ups with the wake ping, a 90 s timeout, the "waking up the model…" message, and a `503 ML_UNAVAILABLE` error with a retry button.
+**Sleeping:** free Spaces sleep after about 48 h without visitors. We handle wake-ups with the wake ping (sent when the analyze page opens, so the Space boots while the user picks a photo), a 50 s timeout, the "waking up the model…" message, and a `503 ML_UNAVAILABLE` error with a retry button.
 
 **Docker, for reference:** the `Dockerfile` uses `python:3.12-slim`, installs requirements before copying code (layer caching), runs as a non-root user, listens on `$PORT` and has a `HEALTHCHECK`. On a free Render instance (512 MB) it fits because ONNX needs about 280 MB, whereas PyTorch alone wouldn't fit.
 
@@ -303,7 +303,7 @@ Next.js gives us frontend and backend in one deployment. `src/app/api/**/route.t
 
 ### Patterns worth knowing
 
-- **`export const runtime = "nodejs"`** and **`maxDuration`**: run on Node (not Edge) for Prisma and crypto, and allow up to 120 s for cold starts.
+- **`export const runtime = "nodejs"`** and **`maxDuration`**: run on Node (not Edge) for Prisma and crypto, and allow up to 60 s (the Vercel Hobby maximum) for cold starts.
 - **`proxy.ts`** (Next 16's new name for `middleware.ts`): runs Clerk on every request. Only `/history` is protected there; API routes return JSON errors themselves.
 - **Validated env** (`src/lib/env.ts`): Zod parses `process.env` on first use, so misconfiguration fails with a clear list of what's missing. It's **lazy** so `next build` doesn't need runtime secrets.
 - **`import "server-only"`**: the build fails if a secret-holding module is ever imported into client code.
@@ -578,7 +578,7 @@ The test `conditions.test.ts` fails if the web app's condition content and the m
 
 **"Why a Gradio Space on ZeroGPU if the model runs on CPU?"** It's the free compute option on Hugging Face. ZeroGPU only attaches a GPU to decorated functions, so CPU inference costs no quota, and the same pipeline can also run as FastAPI in Docker.
 
-**"What happens when the free host is asleep?"** A wake ping when the analyze page opens, a 90 s server timeout, a UI message after 9 s, and a specific `ML_UNAVAILABLE` error with a retry button. The user is refunded if it fails.
+**"What happens when the free host is asleep?"** A wake ping when the analyze page opens, a 50 s server timeout (under Vercel Hobby's 60 s cap), a UI message after 9 s, and a specific `ML_UNAVAILABLE` error with a retry button. The user is refunded if it fails.
 
 ---
 

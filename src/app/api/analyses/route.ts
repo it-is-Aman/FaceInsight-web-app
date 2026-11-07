@@ -10,8 +10,9 @@ import { getSample } from "@/lib/samples";
 import { claimGuestAnalyses, getIpHash, getOrCreateGuestId, getViewer } from "@/lib/viewer";
 
 export const runtime = "nodejs";
-// Leaves room for a sleeping free-tier ML host to boot.
-export const maxDuration = 120;
+// Vercel Hobby allows at most 60 s. The ML call itself gives up at 50 s (see lib/ml.ts),
+// so a still-booting Space returns a clean ML_UNAVAILABLE error instead of a platform timeout.
+export const maxDuration = 60;
 
 // Vercel rejects request bodies over 4.5 MB; the client compresses well below this.
 const MAX_BYTES = 4 * 1024 * 1024;

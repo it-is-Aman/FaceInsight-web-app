@@ -35,8 +35,9 @@ const UNAVAILABLE = new MlError(
   "The analysis model is waking up (this happens after a quiet period). Please try again in about 30 seconds.",
 );
 
-// A sleeping free Space can take ~30-60s to boot.
-const TIMEOUT_MS = 90_000;
+// Must stay below the route's maxDuration (60 s on Vercel Hobby). A Space that is still booting
+// after this returns ML_UNAVAILABLE; the wake ping on /analyze usually has it awake by then.
+const TIMEOUT_MS = 50_000;
 
 function base() {
   return env().ML_SERVICE_URL.replace(/\/+$/, "");
