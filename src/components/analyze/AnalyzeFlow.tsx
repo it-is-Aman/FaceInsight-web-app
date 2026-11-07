@@ -50,7 +50,7 @@ export default function AnalyzeFlow() {
   const [slow, setSlow] = useState(false);
   const cameraInput = useRef<HTMLInputElement>(null);
 
-  // Start waking the model as soon as the page opens; free Spaces sleep when idle.
+  // Start waking the model as soon as the page opens; free hosts sleep when idle.
   useEffect(() => {
     void fetch("/api/ml/wake").catch(() => {});
   }, []);

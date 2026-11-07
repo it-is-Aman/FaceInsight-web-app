@@ -6,6 +6,9 @@ const schema = z.object({
 
   ML_SERVICE_URL: z.url(),
   ML_API_KEY: z.string().default(""),
+  // auto = Gradio API for *.hf.space URLs, FastAPI /predict otherwise
+  ML_BACKEND: z.enum(["auto", "gradio", "fastapi"]).default("auto"),
+  HF_TOKEN: z.string().default(""), // only for a private Space
 
   GEMINI_API_KEY: z.string().min(1),
   GEMINI_MODEL: z.string().default("gemini-2.5-flash"),

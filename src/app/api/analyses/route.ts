@@ -10,7 +10,7 @@ import { getSample } from "@/lib/samples";
 import { claimGuestAnalyses, getIpHash, getOrCreateGuestId, getViewer } from "@/lib/viewer";
 
 export const runtime = "nodejs";
-// Leaves room for a sleeping Hugging Face Space to boot.
+// Leaves room for a sleeping free-tier ML host to boot.
 export const maxDuration = 120;
 
 // Vercel rejects request bodies over 4.5 MB; the client compresses well below this.

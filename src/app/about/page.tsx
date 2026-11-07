@@ -30,7 +30,7 @@ const pipeline = [
 ];
 
 const stack = [
-  { icon: Cpu, label: "Inference", value: "FastAPI · ONNX Runtime · Hugging Face Spaces" },
+  { icon: Cpu, label: "Inference", value: "ONNX Runtime · Gradio · Hugging Face Spaces" },
   { icon: Database, label: "App", value: "Next.js 16 · Prisma 7 · Postgres (Neon) · Clerk" },
   { icon: Lock, label: "Privacy", value: "Photos processed in memory, never written to disk" },
 ];

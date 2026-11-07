@@ -9,7 +9,7 @@
 | **Web app** | Next.js 16 · React 19 · TypeScript · Tailwind CSS 4 · shadcn/ui |
 | **Backend** | Next.js route handlers · Prisma 7 · PostgreSQL (Neon) · Clerk auth · Dodo Payments |
 | **AI** | ResNet-50 (fastai → **ONNX**) on FastAPI · OpenCV YuNet face detection · Google Gemini (structured output + streaming chat) |
-| **Hosting** | Vercel (web) · Hugging Face Spaces, Docker (ML) |
+| **Hosting** | Vercel (web) · Hugging Face Space, Gradio on ZeroGPU hardware with CPU inference (ML) |
 
 ML service repo: [`ml-model`](../ml-model) · Deep-dive guide: [`docs/HOW_IT_WORKS.md`](docs/HOW_IT_WORKS.md)
 
@@ -34,7 +34,7 @@ Browser ──► Next.js on Vercel ──────────────�
   │           ├─ Postgres via Prisma: users, credits, analyses, chat       │
   │           ├─ Gemini: care guide (JSON schema) + chat (streamed)       │
   │           ├─ Dodo Payments: checkout + signed webhook                 │
-  │           └─ POST /predict  (X-API-Key) ──► FastAPI on HF Spaces       │
+  │           └─ Gradio API (API key) ──────► Gradio Space on HF         │
   │                                              ├─ YuNet face detection   │
   │                                              └─ ResNet-50 (ONNX)       │
   └─ compresses photo on-device, keeps a thumbnail in sessionStorage only ─┘
@@ -62,6 +62,8 @@ pnpm dev                     # http://localhost:3000
 | `CLERK_WEBHOOK_SIGNING_SECRET` | | Syncs user updates and deletions (`/api/webhooks/clerk`) |
 | `ML_SERVICE_URL` | ✅ | e.g. `https://<user>-<space>.hf.space` (server-only) |
 | `ML_API_KEY` | ✅ | Shared secret; must match the ML service |
+| `ML_BACKEND` | | `auto` (default: Gradio API for `*.hf.space`, else FastAPI `/predict`), `gradio` or `fastapi` |
+| `HF_TOKEN` | | Only if the Space is private |
 | `GEMINI_API_KEY` | ✅ | Google AI Studio key |
 | `GEMINI_MODEL`, `GEMINI_FALLBACK_MODEL` | | Default `gemini-2.5-flash`, then `gemini-flash-latest` |
 | `DODO_PAYMENTS_API_KEY`, `DODO_PAYMENTS_WEBHOOK_KEY` | for payments | Checkout and webhook signature verification |
@@ -108,7 +110,7 @@ prisma/                             schema + migrations
 
 ## Deployment
 
-1. **ML service:** push [`ml-model`](../ml-model) to a Hugging Face Docker Space (steps in its README) and set `ML_API_KEY` as a Space secret.
+1. **ML service:** run `ml-model/scripts/build_space.sh`, upload `dist/space/` to a Gradio Space with ZeroGPU hardware, and add the `ML_API_KEY` secret (steps in its README).
 2. **Database:** create a Neon database, then run `pnpm db:deploy`.
 3. **Web:** import this repo into Vercel and add the environment variables above.
 4. **Webhooks:** point Dodo at `https://<app>/api/payment/webhook` and Clerk at `https://<app>/api/webhooks/clerk`.

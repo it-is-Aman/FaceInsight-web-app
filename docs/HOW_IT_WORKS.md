@@ -10,7 +10,7 @@ A deep-dive into every layer of the project: the model, the ONNX conversion, the
 4. [From fastai to ONNX](#4-from-fastai-to-onnx)
 5. [Face detection (YuNet)](#5-face-detection-yunet)
 6. [The ML service (FastAPI)](#6-the-ml-service-fastapi)
-7. [Hosting the model (Docker + Hugging Face Spaces)](#7-hosting-the-model-docker--hugging-face-spaces)
+7. [Hosting the model (Hugging Face Space)](#7-hosting-the-model-hugging-face-space)
 8. [The web backend (Next.js route handlers)](#8-the-web-backend-nextjs-route-handlers)
 9. [Database (Postgres + Prisma)](#9-database-postgres--prisma)
 10. [Identity: users and guests](#10-identity-users-and-guests)
@@ -37,7 +37,7 @@ FaceInsight has **two services** in **two repos**:
 | Framework | FastAPI | Next.js 16 (App Router) |
 | Job | Image in → labels + confidence out | Everything else: UI, auth, credits, payments, AI text, history |
 | State | **Stateless**: no database, no disk writes | Postgres via Prisma |
-| Hosting | Hugging Face Spaces (Docker, free CPU) | Vercel |
+| Hosting | Hugging Face Space (Gradio, ZeroGPU hardware, CPU inference) | Vercel |
 
 ```
 ┌──────────── Browser ────────────┐
@@ -52,9 +52,9 @@ FaceInsight has **two services** in **two repos**:
 │  • Gemini: care guide (JSON) + chat (streamed)          │
 │  • Dodo: checkout + signed webhooks                     │
 └───────────────┬─────────────────────────────────────────┘
-                │ POST /predict + X-API-Key (server to server)
-┌───────────────▼────────────────────── Hugging Face ─────┐
-│ FastAPI → YuNet face check → ResNet-50 (ONNX Runtime)   │
+                │ Gradio API "analyze" + API key (server to server)
+┌───────────────▼──────────────────── Hugging Face Space ─┐
+│ Gradio → YuNet face check → ResNet-50 (ONNX, CPU)       │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -66,7 +66,7 @@ FaceInsight has **two services** in **two repos**:
 
 What happens when a user clicks **Analyze photo**:
 
-1. **The analyze page opens** and immediately calls `GET /api/ml/wake`. The server pings the ML service's `/health`, so a sleeping Hugging Face Space starts booting while the user is still choosing a photo.
+1. **The analyze page opens** and immediately calls `GET /api/ml/wake`. The server pings the ML service's `/health`, so a sleeping Space starts booting while the user is still choosing a photo.
 2. **The user picks a photo.** `checkQuality()` draws it onto a 64×64 canvas and computes average brightness, warning if it's too dark or too bright, or below 400 px.
 3. **Compression** (`browser-image-compression`): the photo is resized to at most 1600 px and saved as JPEG under 1.5 MB. This removes EXIF metadata (GPS and similar), speeds up the upload, and keeps us under Vercel's 4.5 MB request limit.
 4. **Upload:** `POST /api/analyses` with `multipart/form-data`.
@@ -74,7 +74,7 @@ What happens when a user clicks **Analyze photo**:
 6. **Allowance check:**
    - *Signed in:* `consumeCredit()` atomically takes one credit, or returns `402 NO_CREDITS`.
    - *Guest:* count this guest's uploads in the last 24 h by cookie id **or** IP hash; if ≥ 1, return `401 SIGN_IN_REQUIRED`.
-7. **Call the ML service:** `predict()` sends the image with the `X-API-Key` header and a 90 s timeout (enough for a cold start).
+7. **Call the ML service:** `predict()` sends the image (base64) and the API key to the Space's Gradio `analyze` endpoint, with a 90 s timeout (enough for a cold start).
 8. **The ML service:** decodes the image → applies EXIF rotation → YuNet checks there's a face → preprocesses → ResNet-50 in ONNX Runtime → softmax → returns the top 3 labels.
 9. **Save:** an `Analysis` row stores the predictions (never the photo), and the server returns `{ id }`.
    - If anything in steps 7–9 fails, `refundCredit()` returns the credit.
@@ -252,22 +252,37 @@ Stable **error codes** (not just messages) let the web app react precisely, e.g.
 
 ---
 
-## 7. Hosting the model (Docker + Hugging Face Spaces)
+## 7. Hosting the model (Hugging Face Space)
 
-**Docker** packages the code, dependencies and models into one image that runs the same everywhere. Highlights of our `Dockerfile`:
+**What we use:** a Hugging Face **Space** with SDK **Gradio** and hardware **ZeroGPU**, which is the free option for compute Spaces. (Docker and CPU-only Gradio Spaces need a paid plan since 2026.)
 
-- `python:3.12-slim` base image, plus `opencv-python-headless` (no GUI libraries needed).
-- `requirements.txt` is copied **before** the code, so Docker caches the dependency layer and rebuilds are fast.
-- Runs as **uid 1000** (what HF requires; also safer than root).
-- `HEALTHCHECK` hits `/health`.
-- `.dockerignore` excludes `export.pkl`, tests and the venv to keep the image small.
+**How ZeroGPU works:** the Space is a normal container with CPU and RAM, where all our code runs. A GPU is attached **only while a function decorated with `@spaces.GPU` runs**, and that GPU time is what the free daily quota (5 min) measures. Our ONNX model runs on **CPU** (`CPUExecutionProvider`, about 15 ms per image), so it never asks for a GPU and **never uses quota**. ZeroGPU refuses to start without at least one `@spaces.GPU` function, so `gradio_app.py` contains one placeholder that is never called.
 
-**Hugging Face Spaces (free CPU basic):** 2 vCPU and 16 GB RAM. It builds your Dockerfile, serves on port 7860 (`app_port` in the README frontmatter), and keeps secrets in Settings.
+**The code** (`ml-model/`):
+- `app/service.py`: the shared pipeline (validate → decode → YuNet face check → classify). Used by both transports.
+- `space/gradio_app.py`: the Space. `gr.api(analyze, api_name="analyze")` exposes a plain function as an API endpoint, and a small `gr.Blocks` page is the public demo. The demo button is hidden from the API listing (`api_visibility="private"`).
+- `app/main.py`: the same pipeline as a FastAPI `/predict` service, for Docker hosts (Render, Cloud Run, a PRO Space). It's the fallback.
 
-- **It sleeps after about 48 h without traffic.** The next request wakes it (about 30–60 s). We handle this with the wake ping, a 90 s timeout, the "waking up the model…" message, and a `503 ML_UNAVAILABLE` error with a retry button.
-- **Git LFS:** HF and GitHub reject plain files over about 10 MB and 100 MB respectively. LFS stores large binaries separately and keeps a small pointer in git. `.gitattributes` marks `*.onnx` and `*.pkl` for LFS.
+**How the web app calls it** (`src/lib/ml.ts`): Gradio's HTTP API is two requests:
 
-**Why not AWS anymore?** An always-on EC2 instance costs money even when idle. Alternatives were Render or Koyeb free tiers (512 MB RAM, too small for PyTorch, though ONNX would fit), Google Cloud Run (needs a card), or Oracle's free VM (you manage the server yourself).
+```
+POST /gradio_api/call/analyze   {"data": ["<base64 image>", "<ML_API_KEY>"]}   → {"event_id": "..."}
+GET  /gradio_api/call/analyze/<event_id>   → Server-Sent Events, ending in:
+     event: complete
+     data: [{"predictions": [...], "face": {...}, ...}]      (or [{"error": {"code", "message"}}])
+```
+
+`readGradioComplete()` parses the event stream, and errors map to the same codes as before (`NO_FACE`, `INVALID_IMAGE`…), so the UI didn't change. `ML_BACKEND=auto` picks this client for `*.hf.space` URLs and the FastAPI client otherwise, so switching hosts is just changing `ML_SERVICE_URL`.
+
+**Why base64 instead of a file upload?** Gradio file inputs require a separate upload call and store the file in the Space's temp cache. Sending base64 in the JSON body keeps it to one request and the image never touches disk, which is our privacy promise. (Demo-page uploads do go through Gradio's cache, which we clear hourly with `delete_cache`.)
+
+**Model file:** `scripts/build_space.sh` bundles `model.onnx` (100 MB) into the upload, and Hugging Face stores large files automatically. Alternatively, set `MODEL_URL` and `app/model_store.py` downloads it on start with a **pinned SHA-256 check**. In the GitHub repo the model is tracked with **Git LFS**.
+
+**Sleeping:** free Spaces sleep after about 48 h without visitors. We handle wake-ups with the wake ping, a 90 s timeout, the "waking up the model…" message, and a `503 ML_UNAVAILABLE` error with a retry button.
+
+**Docker, for reference:** the `Dockerfile` uses `python:3.12-slim`, installs requirements before copying code (layer caching), runs as a non-root user, listens on `$PORT` and has a `HEALTHCHECK`. On a free Render instance (512 MB) it fits because ONNX needs about 280 MB, whereas PyTorch alone wouldn't fit.
+
+**Why not AWS?** An always-on EC2 instance costs money even when idle.
 
 ---
 
@@ -350,6 +365,21 @@ It was tested on a local Postgres with sample legacy rows. **Before running it o
 ---
 
 ## 11. Credits: atomic, race-free billing
+
+### Two modes, one switch
+
+`NEXT_PUBLIC_PAYMENTS_ENABLED` (in `src/lib/plans.ts`) picks how allowances work:
+
+| | Payments **off** (default) | Payments **on** |
+|---|---|---|
+| Signed-in users | `NEXT_PUBLIC_DAILY_ANALYSIS_LIMIT` uploads per **rolling 24 h** (default 10) | Credit buckets (free 10 + purchased passes) |
+| How it's counted | `COUNT(analyses WHERE user_id AND source='upload' AND created_at > now-24h)` | Atomic conditional `UPDATE` (below) |
+| When exhausted | `429 DAILY_LIMIT`, with the time until the next one frees up | `402 NO_CREDITS` → pricing page |
+| Pricing page, nav link, checkout API | hidden / 404 | visible |
+
+In daily mode nothing needs refunding: a failed analysis never creates a row, so it never counts. The rolling window means each analysis "comes back" exactly 24 h after it was used (`resetsAt` = oldest in-window upload + 24 h). Because it's `NEXT_PUBLIC_`, the value is baked in at build time, so **redeploy after changing it**.
+
+### Credit buckets (payments on)
 
 A user can hold several **buckets**: the free 10, plus any passes (2-day: 50 analyses; 7-day: "unlimited", stored as 1,000,000 so the maths stays uniform).
 
@@ -479,15 +509,15 @@ The test `conditions.test.ts` fails if the web app's condition content and the m
 
 ## 17. Deployment and operations
 
-1. **ML:** HF Space (Docker) with the `ML_API_KEY` secret → note its URL.
+1. **ML:** run `scripts/build_space.sh`, upload `dist/space/` to a Gradio Space on ZeroGPU hardware, add the `ML_API_KEY` secret → note its `*.hf.space` URL.
 2. **DB:** Neon. Create a **backup branch**, then run `pnpm db:deploy`.
 3. **Web:** Vercel with the env vars from the README. Remove the old `NEXT_PUBLIC_ML_SERVICE_URL` and `JWT_SECRET`.
 4. **Webhooks:** Dodo → `/api/payment/webhook`; Clerk → `/api/webhooks/clerk` (`user.updated`, `user.deleted`).
 5. **Smoke test:** open `/analyze`, try the demo, upload a selfie, ask a question, then do a test-mode purchase.
 
-**Free-tier costs:** HF Spaces CPU (free), Vercel Hobby (free), Neon (free), Clerk (free up to its MAU limit), Gemini (free tier with rate limits; the fallback helps), and Dodo (charges per transaction only).
+**Free-tier costs:** Hugging Face Space on ZeroGPU hardware (free; CPU inference uses no GPU quota), Vercel Hobby (free), Neon (free), Clerk (free up to its MAU limit), Gemini (free tier with rate limits; the fallback helps), and Dodo (charges per transaction only).
 
-**Logs to watch:** Vercel function logs (`[ml]`, `[gemini]`, `[webhook]` prefixes) and the HF Space logs (`predict ok top=… in …ms`).
+**Logs to watch:** Vercel function logs (`[ml]`, `[gemini]`, `[webhook]` prefixes) and the Space logs (`analyze ok top=… in …ms`).
 
 ---
 
@@ -505,7 +535,9 @@ The test `conditions.test.ts` fails if the web app's condition content and the m
 | **pydantic(-settings)** | Data validation / typed env config | ML API |
 | **pytest** | Python test runner | `tests/` |
 | **Docker** | Container packaging | `Dockerfile` |
-| **Hugging Face Spaces** | Free container hosting for ML demos | ML hosting |
+| **Hugging Face Spaces (Gradio, ZeroGPU)** | Free app hosting; GPU attached only to `@spaces.GPU` functions | ML hosting + public demo |
+| **Gradio** | Python UI/API framework; `gr.api` exposes functions over HTTP | `space/gradio_app.py` |
+| **Render** | Container hosting with a free tier | Docker fallback |
 | **Git LFS** | Large-file storage for git | `*.onnx` |
 | **Next.js 16** | React framework: SSR, routing, API routes | Web app |
 | **React 19** | UI library (server + client components) | Web app |
@@ -530,7 +562,7 @@ The test `conditions.test.ts` fails if the web app's condition content and the m
 
 ## 19. Interview questions you should be ready for
 
-**"Walk me through the architecture."** Two services. A stateless FastAPI inference service on HF Spaces, called server-to-server with an API key, and a Next.js app that owns auth, billing, persistence and LLM features. Splitting them lets the model scale to zero, and it keeps secrets and state in one place.
+**"Walk me through the architecture."** Two services. A stateless inference service on a Hugging Face Space (Gradio API, CPU ONNX inference), called server-to-server with an API key, and a Next.js app that owns auth, billing, persistence and LLM features. Splitting them lets the model scale to zero, and it keeps secrets and state in one place.
 
 **"Why ONNX?"** It cut serve-time dependencies from about 2 GB to about 150 MB, gave faster cold starts and portability (even the browser), and removed unsafe pickle loading. I verified output parity to 3e-6 against the original fastai model.
 
@@ -543,6 +575,8 @@ The test `conditions.test.ts` fails if the web app's condition content and the m
 **"How do you make LLM output reliable?"** A JSON-schema constrained response, validated with Zod, cached per analysis, with a safety system prompt, a timeout and a model fallback. Rendering uses react-markdown, never raw HTML.
 
 **"What are the model's limitations?"** Single-label softmax for a multi-label problem, sensitivity to lighting and makeup, uncalibrated confidence (hence the bands), and fairness depends on training-data diversity.
+
+**"Why a Gradio Space on ZeroGPU if the model runs on CPU?"** It's the free compute option on Hugging Face. ZeroGPU only attaches a GPU to decorated functions, so CPU inference costs no quota, and the same pipeline can also run as FastAPI in Docker.
 
 **"What happens when the free host is asleep?"** A wake ping when the analyze page opens, a 90 s server timeout, a UI message after 9 s, and a specific `ML_UNAVAILABLE` error with a retry button. The user is refunded if it fails.
 
