@@ -1,63 +1,81 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
+// Prisma 7: the connection URL lives in prisma.config.ts and the client is generated into src/.
 generator client {
-  provider   = "prisma-client-js"
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
-// Users Table - Synced from Clerk authentication
+/// Synced lazily from Clerk the first time a user does something that needs a DB row.
 model User {
-  user_id       String   @id // Clerk user ID
-  email         String   @unique
-  password_hash String? // Optional since we use Clerk
-  name          String?
-  created_at    DateTime @default(now())
-  updated_at    DateTime @updatedAt
+  user_id    String   @id // Clerk user ID
+  email      String   @unique
+  name       String?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
 
-  // Relations
-  subscriptions      Subscription[]
-  prediction_history PredictionHistory[]
+  subscriptions Subscription[]
+  analyses      Analysis[]
 
   @@map("users")
 }
 
-// Subscriptions Table - Track user subscription plans
+/// A bucket of analysis credits. Users can hold several (free + purchased passes);
+/// credits are consumed from the bucket that expires soonest.
 model Subscription {
   subscription_id   String    @id @default(cuid())
   user_id           String
-  plan_type         String // 'basic', 'pro', 'enterprise', '2days', '7days'
-  predictions_limit Int // Total allowed predictions
-  predictions_used  Int       @default(0) // Current usage count
+  plan_type         String // 'free' | '2days' | '7days'
+  predictions_limit Int
+  predictions_used  Int       @default(0)
   purchase_date     DateTime  @default(now())
-  expiry_date       DateTime? // Null for unlimited plans
-  status            String    @default("active") // 'active', 'expired', 'cancelled'
-  payment_id        String? // Dodo payment reference
+  expiry_date       DateTime? // null = never expires
+  status            String    @default("active") // 'active' | 'expired' | 'refunded'
+  payment_id        String?   @unique // Dodo payment id; unique makes webhook retries idempotent
 
-  // Relations
   user User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
 
-  @@index([user_id])
-  @@index([status])
+  @@index([user_id, status])
   @@map("subscriptions")
 }
 
-// Prediction History Table - Track all predictions
-model PredictionHistory {
-  prediction_id     String   @id @default(cuid())
-  user_id           String
-  image_url         String? // Optional: store image URL if needed
-  prediction_result String   @db.Text // JSON string of prediction results
-  created_at        DateTime @default(now())
+/// One skin analysis. Photos are never stored, only the model output.
+model Analysis {
+  id              String   @id @default(cuid())
+  user_id         String?
+  guest_id        String? // anonymous owner (httpOnly cookie)
+  ip_hash         String? // salted hash, used only for the guest rate limit
+  source          String   @default("upload") // 'upload' | 'sample'
+  sample_id       String?
+  /// [{ label: string, confidence: number }], sorted by confidence desc
+  predictions     Json
+  face_confidence Float?
+  model_version   String?
+  /// Structured Gemini output (see src/lib/insights.ts), generated once and cached
+  insights        Json?
+  created_at      DateTime @default(now())
 
-  // Relations
-  user User @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  user     User?         @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  messages ChatMessage[]
 
-  @@index([user_id])
-  @@index([created_at])
-  @@map("prediction_history")
+  @@index([user_id, created_at])
+  @@index([guest_id])
+  @@index([ip_hash, created_at])
+  @@index([sample_id])
+  @@map("analyses")
+}
+
+model ChatMessage {
+  id          String   @id @default(cuid())
+  analysis_id String
+  role        String // 'user' | 'assistant'
+  content     String   @db.Text
+  created_at  DateTime @default(now())
+
+  analysis Analysis @relation(fields: [analysis_id], references: [id], onDelete: Cascade)
+
+  @@index([analysis_id, created_at])
+  @@map("chat_messages")
 }

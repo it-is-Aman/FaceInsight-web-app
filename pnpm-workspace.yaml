@@ -1,0 +1,6 @@
+allowBuilds:
+  '@prisma/engines': true
+  prisma: true
+  '@google/genai': false
+  core-js: false
+  protobufjs: false

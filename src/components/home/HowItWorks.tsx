@@ -1,92 +1,44 @@
-import { ArrowRight, Upload, Search, FileText, MessageSquare } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import { Camera, ListChecks, MessagesSquare } from "lucide-react";
 
+const steps = [
+  {
+    icon: Camera,
+    title: "Take or upload a selfie",
+    body: "Front-facing, natural light, no filters. The photo is compressed on your device and analysed in memory.",
+  },
+  {
+    icon: ListChecks,
+    title: "Get your skin report",
+    body: "A ResNet-50 model trained on 15 concerns highlights what stands out, with an honest confidence level for each.",
+  },
+  {
+    icon: MessagesSquare,
+    title: "Follow a routine, ask questions",
+    body: "Gemini turns the results into a morning and evening routine. Ask follow-ups like “is this hormonal?”.",
+  },
+];
 
-const HowItWorks = () => {
-  const steps = [
-    {
-      number: "01",
-      icon: <Upload className="h-6 w-6 text-secondary" />,
-      title: "Upload Your Image",
-      description:
-        "Take a clear photo of your skin concern and upload it to our secure platform.",
-    },
-    {
-      number: "02",
-      icon: <Search className="h-6 w-6 text-secondary" />,
-      title: "AI Analysis",
-      description:
-        "Our advanced AI model analyzes your image and identifies potential skin conditions.",
-    },
-    {
-      number: "03",
-      icon: <FileText className="h-6 w-6 text-secondary" />,
-      title: "Get Detailed Results",
-      description:
-        "Receive a comprehensive report with diagnosis, confidence score, and personalized recommendations.",
-    },
-    {
-      number: "04",
-      icon: <MessageSquare className="h-6 w-6 text-secondary" />,
-      title: "Chat Support",
-      description:
-        "Ask questions and get personalized advice.",
-    },
-  ];
-
+export default function HowItWorks() {
   return (
-    <section id="how-it-works" className="w-full py-12 md:py-24 lg:py-32 bg-white dark:bg-gray-950">
-      <div className="container">
-        <div className="flex flex-col items-center justify-center space-y-4 text-center">
-          <div className="space-y-4 max-w-3xl">
-            <div className="inline-block rounded-lg bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
-              Simple Process
-            </div>
-            <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
-              How FaceInsight AI Works
-            </h2>
-            <p className="max-w-[700px] mx-auto text-muted-foreground text-lg md:text-xl/relaxed">
-              Get accurate skin analysis in just a few simple steps.
-            </p>
-          </div>
+    <section id="how-it-works" className="border-y bg-muted/30 py-20">
+      <div className="container-page">
+        <div className="mx-auto max-w-2xl text-center">
+          <p className="eyebrow">How it works</p>
+          <h2 className="mt-3 text-3xl font-medium sm:text-4xl">From selfie to routine in under a minute</h2>
         </div>
-
-        <div className="relative mt-20">
-          {/* Connecting Line */}
-          <div className="absolute top-24 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent hidden md:block" aria-hidden="true"></div>
-
-          <ol className="grid grid-cols-1 gap-12 md:grid-cols-4" role="list">
-            {steps.map((step, index) => (
-              <li
-                key={index}
-                className="flex flex-col items-center text-center relative group"
-              >
-                <div className="relative z-10 flex h-16 w-16 items-center justify-center rounded-full bg-primary text-white mb-8 shadow-md group-hover:scale-110 transition-transform duration-300" aria-hidden="true">
-                  {step.icon}
-                </div>
-                <div className="absolute top-0 -left-2 text-8xl font-bold text-gray-100 dark:text-gray-900 opacity-60 z-0 font-display" aria-hidden="true">
-                  {step.number}
-                </div>
-                <div className="space-y-3">
-                  <h3 className="text-2xl font-semibold">{step.title}</h3>
-                  <p className="text-muted-foreground">{step.description}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </div>
-
-        <div className="flex justify-center mt-20">
-          <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 group">
-            <Link href="/upload" className="flex items-center justify-center">
-              Start Analysis <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
-          </Button>
-        </div>
+        <ol className="mt-12 grid gap-6 md:grid-cols-3">
+          {steps.map((s, i) => (
+            <li key={s.title} className="relative rounded-2xl border bg-card p-6">
+              <span className="absolute right-6 top-6 font-serif text-5xl text-muted-foreground/20">{i + 1}</span>
+              <span className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <s.icon className="size-5" />
+              </span>
+              <h3 className="mt-5 font-sans text-lg font-semibold">{s.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{s.body}</p>
+            </li>
+          ))}
+        </ol>
       </div>
     </section>
   );
-};
-
-export default HowItWorks;
+}

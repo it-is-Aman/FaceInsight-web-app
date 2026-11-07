@@ -1,156 +1,103 @@
-import { Metadata } from 'next';
-import { notFound } from 'next/navigation';
-import Link from 'next/link';
-import { ChevronLeft, Info, CheckCircle2, AlertTriangle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { skinConditions, getConditionBySlug } from '@/lib/conditions';
-import { generateMetadata as genMeta, generateBreadcrumbSchema } from '@/lib/seo';
-import { routes } from '@/lib/routes';
+import { ArrowRight, CircleCheck, Eye, Sprout, Stethoscope } from "lucide-react";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { Button } from "@/components/ui/button";
+import { CATEGORY_LABELS, CONDITIONS, getConditionBySlug } from "@/lib/conditions";
+import { routes } from "@/lib/routes";
+import { pageMetadata } from "@/lib/seo";
 
-interface PageProps {
-    params: Promise<{ slug: string }>;
+export const dynamicParams = false;
+
+export function generateStaticParams() {
+  return CONDITIONS.map((c) => ({ slug: c.slug }));
 }
 
-export async function generateStaticParams() {
-    return skinConditions.map((condition) => ({
-        slug: condition.slug,
-    }));
+export async function generateMetadata({ params }: PageProps<"/conditions/[slug]">) {
+  const c = getConditionBySlug((await params).slug);
+  if (!c) return {};
+  return pageMetadata({
+    title: `${c.name}: causes & what helps`,
+    description: c.summary,
+    path: routes.condition(c.slug),
+  });
 }
 
-export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-    const { slug } = await params;
-    const condition = getConditionBySlug(slug);
+export default async function ConditionPage({ params }: PageProps<"/conditions/[slug]">) {
+  const c = getConditionBySlug((await params).slug);
+  if (!c) notFound();
 
-    if (!condition) {
-        return genMeta({
-            title: 'Condition Not Found',
-            description: 'The requested skin condition information could not be found.',
-            path: `/conditions/${slug}`,
-        });
-    }
+  const related = CONDITIONS.filter((x) => x.category === c.category && x.slug !== c.slug);
+  const blocks = [
+    { icon: Eye, title: "Signs", items: c.signs },
+    { icon: Sprout, title: "Common causes", items: c.causes },
+    { icon: CircleCheck, title: "What helps", items: c.care },
+  ];
 
-    return genMeta({
-        title: `${condition.name} - Symptoms & Recommendations`,
-        description: condition.description,
-        path: `/conditions/${slug}`,
-    });
-}
-
-export default async function ConditionPage({ params }: PageProps) {
-    const { slug } = await params;
-    const condition = getConditionBySlug(slug);
-
-    if (!condition) {
-        notFound();
-    }
-
-    return (
-        <>
-            {/* Breadcrumb Structured Data */}
-            <script
-                type="application/ld+json"
-                dangerouslySetInnerHTML={{
-                    __html: JSON.stringify(generateBreadcrumbSchema([
-                        { name: 'Home', path: '/' },
-                        { name: 'Conditions', path: '/conditions' },
-                        { name: condition.name, path: `/conditions/${slug}` },
-                    ])),
-                }}
-            />
-
-            <div className="min-h-screen bg-slate-50/50 pt-24 pb-16">
-                <div className="container mx-auto px-4">
-                    <div className="max-w-4xl mx-auto">
-                        {/* Navigation */}
-                        <Link
-                            href={routes.home}
-                            className="inline-flex items-center text-sm text-muted-foreground hover:text-primary mb-8 transition-colors"
-                        >
-                            <ChevronLeft className="w-4 h-4 mr-1" />
-                            Back to Home
-                        </Link>
-
-                        {/* Header Section */}
-                        <div className="bg-white rounded-3xl p-8 md:p-12 shadow-sm border border-slate-100 mb-8">
-                            <div className="flex items-center gap-3 mb-6">
-                                <div className="p-2 bg-primary/10 rounded-xl">
-                                    <Info className="w-6 h-6 text-primary" />
-                                </div>
-                                <span className="text-sm font-semibold text-primary tracking-wider uppercase">Condition Guide</span>
-                            </div>
-
-                            <h1 className="text-4xl md:text-5xl font-bold text-slate-900 mb-6 leading-tight">
-                                Understanding {condition.name}
-                            </h1>
-
-                            <p className="text-xl text-slate-600 leading-relaxed">
-                                {condition.description}
-                            </p>
-                        </div>
-
-                        <div className="grid md:grid-cols-2 gap-8">
-                            {/* Symptoms Section */}
-                            <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100">
-                                <div className="flex items-center gap-3 mb-6">
-                                    <div className="p-2 bg-amber-50 rounded-xl">
-                                        <AlertTriangle className="w-5 h-5 text-amber-600" />
-                                    </div>
-                                    <h2 className="text-2xl font-bold text-slate-900">Common Symptoms</h2>
-                                </div>
-
-                                <ul className="space-y-4">
-                                    {condition.symptoms.map((symptom, index) => (
-                                        <li key={index} className="flex items-start gap-3">
-                                            <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
-                                            <span className="text-slate-600 leading-relaxed">{symptom}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-
-                            {/* Recommendations Section */}
-                            <div className="bg-white rounded-3xl p-8 shadow-sm border border-slate-100">
-                                <div className="flex items-center gap-3 mb-6">
-                                    <div className="p-2 bg-emerald-50 rounded-xl">
-                                        <CheckCircle2 className="w-5 h-5 text-emerald-600" />
-                                    </div>
-                                    <h2 className="text-2xl font-bold text-slate-900">Care Advice</h2>
-                                </div>
-
-                                <ul className="space-y-4">
-                                    {condition.recommendations.map((rec, index) => (
-                                        <li key={index} className="flex items-start gap-3">
-                                            <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
-                                            <span className="text-slate-600 leading-relaxed">{rec}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        </div>
-
-                        {/* CTA Section */}
-                        <div className="mt-12 bg-slate-900 rounded-3xl p-8 md:p-12 text-center text-white relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl -mr-32 -mt-32" />
-                            <div className="relative z-10">
-                                <h3 className="text-2xl md:text-3xl font-bold mb-4">Concerned about your skin?</h3>
-                                <p className="text-slate-400 mb-8 max-w-xl mx-auto">
-                                    Get a personalized analysis using our AI technology. Upload a photo for instant insights and care recommendations.
-                                </p>
-                                <Button asChild size="lg" className="bg-primary hover:bg-primary/90 text-white px-8 rounded-full">
-                                    <Link href={routes.upload}>
-                                        Start Free Analysis
-                                    </Link>
-                                </Button>
-                            </div>
-                        </div>
-
-                        {/* Disclaimer */}
-                        <p className="mt-8 text-center text-sm text-slate-400 max-w-2xl mx-auto">
-                            Disclaimer: This information is for educational purposes only and does not constitute medical advice. Always consult with a qualified healthcare professional for diagnosis and treatment.
-                        </p>
-                    </div>
-                </div>
+  return (
+    <>
+      <PageHeader
+        eyebrow={CATEGORY_LABELS[c.category]}
+        title={c.name}
+        description={c.summary}
+        crumbs={[
+          { name: "Home", path: "/" },
+          { name: "Skin concerns", path: routes.conditions },
+          { name: c.name, path: routes.condition(c.slug) },
+        ]}
+      />
+      <div className="container-page grid gap-10 py-14 lg:grid-cols-[1fr_20rem]">
+        <div className="space-y-6">
+          {blocks.map((b) => (
+            <section key={b.title} className="rounded-3xl border bg-card p-6">
+              <h2 className="flex items-center gap-2 font-sans text-lg font-semibold">
+                <b.icon className="size-5 text-primary" /> {b.title}
+              </h2>
+              <ul className="mt-4 space-y-2.5">
+                {b.items.map((i) => (
+                  <li key={i} className="flex gap-3 text-muted-foreground">
+                    <span className="mt-2 size-1.5 shrink-0 rounded-full bg-primary" />
+                    {i}
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ))}
+          <section className="flex gap-3 rounded-3xl border border-warning/40 bg-warning/10 p-6">
+            <Stethoscope className="mt-0.5 size-5 shrink-0" />
+            <div>
+              <h2 className="font-sans text-lg font-semibold">When to see a dermatologist</h2>
+              <p className="mt-1 text-muted-foreground">{c.seeADoctor}</p>
             </div>
-        </>
-    );
+          </section>
+        </div>
+
+        <aside className="space-y-6 lg:sticky lg:top-24 lg:self-start">
+          <div className="rounded-3xl bg-primary p-6 text-primary-foreground">
+            <h2 className="font-serif text-2xl">Wondering if this applies to you?</h2>
+            <p className="mt-2 text-sm text-primary-foreground/80">Get a free AI skin check from one selfie.</p>
+            <Button asChild variant="secondary" className="mt-5 w-full">
+              <Link href={routes.analyze}>
+                Analyze my skin <ArrowRight />
+              </Link>
+            </Button>
+          </div>
+          {related.length > 0 && (
+            <div className="rounded-3xl border bg-card p-6">
+              <h2 className="font-sans text-sm font-semibold">Related concerns</h2>
+              <ul className="mt-3 space-y-2">
+                {related.map((r) => (
+                  <li key={r.slug}>
+                    <Link href={routes.condition(r.slug)} className="text-sm text-primary hover:underline">
+                      {r.name}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </aside>
+      </div>
+    </>
+  );
 }

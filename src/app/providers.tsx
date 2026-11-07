@@ -1,23 +1,34 @@
-// app/providers.jsx
-'use client'
+"use client";
 
-import posthog from 'posthog-js'
-import { PostHogProvider as PHProvider } from 'posthog-js/react'
-import { useEffect } from 'react'
-import PostHogPageView from "./PostHogPageView"
+import { ThemeProvider } from "next-themes";
+import posthog from "posthog-js";
+import { PostHogProvider } from "posthog-js/react";
+import { useEffect } from "react";
+import { Toaster } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import PostHogPageView from "./PostHogPageView";
 
-export function PostHogProvider({ children }: { children: React.ReactNode }) {
-    useEffect(() => {
-        posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY as string, {
-            api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
-            capture_pageview: false // Disable automatic pageview capture, as we capture manually
-        })
-    }, [])
+const POSTHOG_KEY = process.env.NEXT_PUBLIC_POSTHOG_KEY;
 
-    return (
-        <PHProvider client={posthog}>
-            <PostHogPageView />
-            {children}
-        </PHProvider>
-    )
+export function Providers({ children }: { children: React.ReactNode }) {
+  useEffect(() => {
+    if (!POSTHOG_KEY) return;
+    posthog.init(POSTHOG_KEY, {
+      api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST,
+      capture_pageview: false,
+      person_profiles: "identified_only",
+    });
+  }, []);
+
+  return (
+    <PostHogProvider client={posthog}>
+      <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+        <TooltipProvider delayDuration={200}>
+          {POSTHOG_KEY ? <PostHogPageView /> : null}
+          {children}
+          <Toaster richColors position="top-center" />
+        </TooltipProvider>
+      </ThemeProvider>
+    </PostHogProvider>
+  );
 }

@@ -1,102 +1,109 @@
-import React from 'react';
-import { Metadata } from 'next';
+import { ArrowRight, Brain, Cpu, Database, Lock, MessageSquareText, ScanFace } from "lucide-react";
+import Link from "next/link";
+import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
-import Link from 'next/link';
-import {
-    generateMetadata as genMeta,
-    generateWebPageSchema,
-    generateBreadcrumbSchema
-} from '@/lib/seo';
+import { routes } from "@/lib/routes";
+import { pageMetadata } from "@/lib/seo";
 
-// Page-specific SEO metadata
-export const metadata: Metadata = genMeta({
-    title: 'About Us - Our Mission & Technology',
-    description: 'Learn about FaceInsight AI - combining cutting-edge artificial intelligence with dermatological expertise to provide accurate skin condition analysis and personalized recommendations.',
-    path: '/about',
+export const metadata = pageMetadata({
+  title: "About",
+  description: "Why FaceInsight AI exists, how the skin model works, and how your privacy is protected.",
+  path: "/about",
 });
 
-export default function About() {
-    return (
-        <>
-            {/* Structured Data for WebPage */}
-            <script
-                type="application/ld+json"
-                dangerouslySetInnerHTML={{
-                    __html: JSON.stringify(generateWebPageSchema({
-                        title: 'About FaceInsight AI',
-                        description: 'Learn about our mission to make professional skin analysis accessible to everyone through AI technology.',
-                        path: '/about',
-                    })),
-                }}
-            />
-            {/* Breadcrumb Structured Data */}
-            <script
-                type="application/ld+json"
-                dangerouslySetInnerHTML={{
-                    __html: JSON.stringify(generateBreadcrumbSchema([
-                        { name: 'Home', path: '/' },
-                        { name: 'About', path: '/about' },
-                    ])),
-                }}
-            />
+const pipeline = [
+  {
+    icon: ScanFace,
+    title: "Face check",
+    body: "OpenCV's YuNet detector confirms there is a clear, front-facing face before anything else runs.",
+  },
+  {
+    icon: Brain,
+    title: "Skin classifier",
+    body: "A ResNet-50 fine-tuned with fastai on 15 facial skin concerns, exported to ONNX for fast CPU inference.",
+  },
+  {
+    icon: MessageSquareText,
+    title: "Care guide",
+    body: "Google Gemini turns the top results into a structured routine and answers follow-up questions, with safety rules that keep it non-diagnostic.",
+  },
+];
 
-            <div className="flex flex-col min-h-screen">
-                <section className="pt-24 pb-12 bg-gradient-to-b from-[#F5F5F5] to-white">
-                    <div className="container mx-auto px-4">
-                        <nav aria-label="Breadcrumb" className="mb-6">
-                            <ol className="flex items-center space-x-2 text-sm text-muted-foreground">
-                                <li><Link href="/" className="hover:text-primary">Home</Link></li>
-                                <li aria-hidden="true">/</li>
-                                <li aria-current="page" className="text-foreground font-medium">About</li>
-                            </ol>
-                        </nav>
+const stack = [
+  { icon: Cpu, label: "Inference", value: "FastAPI · ONNX Runtime · Hugging Face Spaces" },
+  { icon: Database, label: "App", value: "Next.js 16 · Prisma 7 · Postgres (Neon) · Clerk" },
+  { icon: Lock, label: "Privacy", value: "Photos processed in memory, never written to disk" },
+];
 
-                        <h1 className="text-4xl md:text-5xl font-bold text-[#283E4A] mb-4">
-                            About FaceInsight AI
-                        </h1>
+export default function AboutPage() {
+  return (
+    <>
+      <PageHeader
+        eyebrow="About"
+        title="Skin insights that are honest about what they are"
+        description="FaceInsight started as a learning project: could a small, well-built model give people a useful first look at their skin, and point them to a professional when it matters?"
+        crumbs={[
+          { name: "Home", path: "/" },
+          { name: "About", path: "/about" },
+        ]}
+      />
 
-                        <div className="grid md:grid-cols-2 gap-12 mt-8">
-                            <article>
-                                <h2 className="text-2xl font-semibold text-[#283E4A] mb-4">Our Mission</h2>
-                                <p className="text-lg text-[#4A4A4A] mb-6">
-                                    FaceInsight AI combines cutting-edge artificial intelligence with dermatological expertise
-                                    to provide accurate skin condition analysis and personalized recommendations. Our goal
-                                    is to make professional skin analysis accessible to everyone.
-                                </p>
+      <section className="container-page py-16">
+        <h2 className="text-3xl font-medium">How an analysis works</h2>
+        <ol className="mt-8 grid gap-6 md:grid-cols-3">
+          {pipeline.map((p, i) => (
+            <li key={p.title} className="rounded-2xl border bg-card p-6">
+              <div className="flex items-center gap-3">
+                <span className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <p.icon className="size-5" />
+                </span>
+                <span className="text-sm text-muted-foreground">Step {i + 1}</span>
+              </div>
+              <h3 className="mt-4 font-sans text-lg font-semibold">{p.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{p.body}</p>
+            </li>
+          ))}
+        </ol>
+      </section>
 
-                                <h2 className="text-2xl font-semibold text-[#283E4A] mb-4">Technology</h2>
-                                <p className="text-lg text-[#4A4A4A] mb-6">
-                                    We use advanced deep learning models trained on thousands of dermatological images
-                                    to identify various skin conditions. Our AI system is continuously updated to provide
-                                    the most accurate and reliable results.
-                                </p>
-
-                                <Button
-                                    asChild
-                                    variant="outline"
-                                    size="lg"
-                                    className="bg-primary text-primary-foreground hover:bg-primary/90 group"
-                                >
-                                    <Link href="/upload">
-                                        Try Face Analysis
-                                    </Link>
-                                </Button>
-                            </article>
-
-                            <aside className="space-y-6">
-                                <h2 className="text-2xl font-semibold text-[#283E4A] mb-4">Key Features</h2>
-                                <ul className="space-y-4 text-lg text-[#4A4A4A]" role="list">
-                                    <li>• Instant skin condition analysis</li>
-                                    <li>• Personalized treatment recommendations</li>
-                                    <li>• AI-powered condition identification</li>
-                                    <li>• Secure and private analysis</li>
-                                    <li>• Expert-backed advice</li>
-                                </ul>
-                            </aside>
-                        </div>
-                    </div>
-                </section>
+      <section className="border-y bg-muted/30">
+        <div className="container-page grid gap-10 py-16 lg:grid-cols-2">
+          <div>
+            <h2 className="text-3xl font-medium">What it is, and isn’t</h2>
+            <div className="mt-4 space-y-4 text-muted-foreground">
+              <p>
+                FaceInsight is an educational tool. It recognises visual patterns associated with common concerns
+                like dark circles, oily skin or blackheads. It can’t see beneath the surface, doesn’t know your
+                history, and can be wrong, which is why every result shows its confidence.
+              </p>
+              <p>
+                It is not a medical device and doesn’t diagnose disease. If something is painful, spreading,
+                bleeding or changing, please see a dermatologist.
+              </p>
             </div>
-        </>
-    );
+          </div>
+          <ul className="space-y-3 self-start">
+            {stack.map((s) => (
+              <li key={s.label} className="flex items-start gap-4 rounded-2xl border bg-card p-5">
+                <s.icon className="mt-0.5 size-5 shrink-0 text-primary" />
+                <div>
+                  <p className="text-sm font-semibold">{s.label}</p>
+                  <p className="text-sm text-muted-foreground">{s.value}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
+
+      <section className="container-page py-16 text-center">
+        <h2 className="text-3xl font-medium">See it for yourself</h2>
+        <Button asChild size="lg" className="mt-6">
+          <Link href={routes.analyze}>
+            Analyze my skin <ArrowRight />
+          </Link>
+        </Button>
+      </section>
+    </>
+  );
 }

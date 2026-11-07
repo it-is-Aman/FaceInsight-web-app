@@ -1,77 +1,82 @@
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import { ArrowRight, ShieldCheck, Clock, Activity } from "lucide-react";
+import { ArrowRight, Lock, Timer, Sparkles } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
+import { TryDemoButton } from "@/components/analyze/TryDemoButton";
+import { Button } from "@/components/ui/button";
+import { routes } from "@/lib/routes";
 
-const Hero = () => {
-    return (
-        <section className="w-full py-12 md:py-24 lg:py-32 hero-gradient relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-radial from-primary/5 to-transparent opacity-70"></div>
-            <div className="container relative z-10">
-                <div className="grid gap-8 lg:grid-cols-[1fr_500px] lg:gap-12 xl:grid-cols-[1fr_600px] items-center">
-                    <div className="flex flex-col justify-center space-y-6">
-                        <div className="space-y-4">
-                            <div className="inline-block rounded-lg bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
-                                Advanced Skin Analysis Technology
-                            </div>
-                            <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none">
-                                Your Personal Skin Health Assistant
-                            </h1>
-                            <p className="max-w-[600px] text-muted-foreground text-lg md:text-xl">
-                                Upload your skin image and get AI-powered diagnosis with personalized care recommendations in seconds.
-                            </p>
-                        </div>
-                        <div className="flex flex-col gap-3 min-[400px]:flex-row">
-                            <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 group">
-                                <Link href="/upload" className="flex items-center justify-center">
-                                    Start Analysis <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                                </Link>
-                            </Button>
-                            <Button asChild variant="outline" size="lg" className="border border-primary/20 hover:bg-primary/5">
-                                <Link href="/about" className="flex items-center justify-center">
-                                    Learn More
-                                </Link>
-                            </Button>
-                        </div>
-                        <div className="flex flex-wrap items-center gap-4 pt-4">
-                            <div className="flex items-center gap-2 bg-white/50 dark:bg-gray-800/50 px-3 py-1.5 rounded-full shadow-sm">
-                                <ShieldCheck className="h-4 w-4 text-primary" />
-                                <span className="text-xs font-medium">Secure Analysis</span>
-                            </div>
-                            <div className="flex items-center gap-2 bg-white/50 dark:bg-gray-800/50 px-3 py-1.5 rounded-full shadow-sm">
-                                <Clock className="h-4 w-4 text-primary" />
-                                <span className="text-xs font-medium">Results in Seconds</span>
-                            </div>
-                            <div className="flex items-center gap-2 bg-white/50 dark:bg-gray-800/50 px-3 py-1.5 rounded-full shadow-sm">
-                                <Activity className="h-4 w-4 text-primary" />
-                                <span className="text-xs font-medium">Precision Diagnosis</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="flex items-center justify-center">
-                        <div className="relative h-[350px] w-[350px] sm:h-[400px] sm:w-[400px] lg:h-[500px] lg:w-[500px] animate-float">
-                            <div className="absolute inset-0 bg-gradient-to-br from-primary/30 to-accent/30 rounded-full blur-3xl opacity-30"></div>
-                            <div className="relative h-full w-full overflow-hidden rounded-2xl shadow-elegant">
-                                <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent mix-blend-overlay"></div>
-                                <Image
-                                    src="/image/homePageImg.jpg"
-                                    alt="AI-powered skin analysis showing a person receiving personalized skincare recommendations through FaceInsight AI technology"
-                                    className="object-cover h-full w-full rounded-2xl opacity-90 transition-all duration-500 hover:scale-105"
-                                    width={500}
-                                    height={300}
-                                    priority
-                                />
-                                <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/70 to-transparent p-6 text-white">
-                                    <h3 className="font-serif text-xl font-semibold">Advanced Analysis</h3>
-                                    <p className="text-sm opacity-90">Powered by cutting-edge AI technology</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+const chips = [
+  { label: "Oily skin", band: "Likely", className: "left-[-6%] top-[18%]" },
+  { label: "Dull skin", band: "Possible", className: "right-[-8%] top-[46%]" },
+  { label: "AM / PM routine", band: "Ready", className: "left-[4%] bottom-[10%]" },
+];
+
+export default function Hero() {
+  return (
+    <section className="relative overflow-hidden">
+      <div aria-hidden className="surface-grid absolute inset-0 -z-10" />
+      <div
+        aria-hidden
+        className="absolute -top-40 left-1/2 -z-10 h-[520px] w-[820px] -translate-x-1/2 rounded-full bg-primary/10 blur-3xl"
+      />
+      <div className="container-page grid items-center gap-14 py-16 md:py-24 lg:grid-cols-[1.1fr_1fr]">
+        <div className="space-y-7">
+          <p className="eyebrow">AI skin check · free to try</p>
+          <h1 className="text-4xl leading-[1.05] font-medium sm:text-5xl lg:text-6xl">
+            Understand your skin from <em className="text-primary not-italic sm:italic">one selfie</em>.
+          </h1>
+          <p className="max-w-xl text-lg text-muted-foreground">
+            FaceInsight spots 15 common facial skin concerns, from dark circles to oily skin, then builds a
+            simple morning and evening routine you can actually follow.
+          </p>
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button asChild size="lg" className="group">
+              <Link href={routes.analyze}>
+                Analyze my skin
+                <ArrowRight className="transition-transform group-hover:translate-x-0.5" />
+              </Link>
+            </Button>
+            <TryDemoButton size="lg" label="See a demo report" />
+          </div>
+          <ul className="flex flex-wrap gap-x-6 gap-y-2 pt-2 text-sm text-muted-foreground">
+            <li className="flex items-center gap-2">
+              <Lock className="size-4 text-primary" /> Photos never stored
+            </li>
+            <li className="flex items-center gap-2">
+              <Timer className="size-4 text-primary" /> Results in seconds
+            </li>
+            <li className="flex items-center gap-2">
+              <Sparkles className="size-4 text-primary" /> No sign-up for your first check
+            </li>
+          </ul>
+        </div>
+
+        <div className="relative mx-auto w-full max-w-md">
+          <div className="relative aspect-[4/5] overflow-hidden rounded-[2rem] border bg-card shadow-2xl shadow-primary/10">
+            <Image
+              src="/samples/demo-illustration.jpg"
+              alt="Illustrated face being analysed"
+              fill
+              priority
+              sizes="(min-width: 1024px) 28rem, 90vw"
+              className="object-cover"
+            />
+            {/* scan frame */}
+            <div aria-hidden className="absolute inset-[14%] overflow-hidden rounded-[1.5rem] border-2 border-white/70 [--scan-h:100cqh] [container-type:size]">
+              <div className="animate-scan h-0.5 w-full bg-gradient-to-r from-transparent via-white to-transparent shadow-[0_0_16px_2px_rgba(255,255,255,0.7)]" />
             </div>
-        </section>
-    );
-};
-
-export default Hero;
+          </div>
+          {chips.map((c) => (
+            <div
+              key={c.label}
+              className={`animate-float absolute hidden rounded-xl border bg-background/90 px-3.5 py-2 shadow-lg backdrop-blur sm:block ${c.className}`}
+            >
+              <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{c.band}</p>
+              <p className="text-sm font-semibold">{c.label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}

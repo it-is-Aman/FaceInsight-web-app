@@ -1,231 +1,90 @@
-import { Metadata } from 'next';
+import type { Metadata } from "next";
 
-// ============================================================
-// Site Configuration - Update these values for your production site
-// ============================================================
 export const siteConfig = {
-  name: 'FaceInsight AI',
-  url: process.env.NEXT_PUBLIC_SITE_URL || 'https://faceinsight.ai',
-  description: 'AI-powered skin analysis and personalized skincare recommendations. Upload your skin image and get instant diagnosis with expert care advice.',
+  name: "FaceInsight AI",
+  url: (process.env.NEXT_PUBLIC_SITE_URL || "https://faceinsight.ai").replace(/\/+$/, ""),
+  description:
+    "Check your skin from a single selfie. FaceInsight AI spots 15 common facial skin concerns and builds a personalised care routine in seconds. Photos are never stored.",
   keywords: [
-    'skin analysis',
-    'AI dermatology',
-    'skin condition detection',
-    'skincare recommendations',
-    'face analysis',
-    'skin health',
-    'dermatology AI',
-    'skin disease detection',
-    'personalized skincare',
-    'skin diagnosis',
+    "skin analysis",
+    "AI skin check",
+    "skincare routine",
+    "face skin analyzer",
+    "acne",
+    "dark circles",
+    "oily skin",
+    "dry skin",
+    "personalised skincare",
   ],
-  author: 'FaceInsight AI',
-  twitterHandle: '@faceinsightai',
-  locale: 'en_US',
+  author: "Aman",
+  contactEmail: process.env.NEXT_PUBLIC_CONTACT_EMAIL || "the email listed on our GitHub profile",
+  locale: "en_US",
 };
 
-// ============================================================
-// Metadata Generation Utilities
-// ============================================================
-
-/**
- * Generates canonical URL for a given path
- */
-export function generateCanonicalUrl(path: string = ''): string {
-  const baseUrl = siteConfig.url.endsWith('/') 
-    ? siteConfig.url.slice(0, -1) 
-    : siteConfig.url;
-  const cleanPath = path.startsWith('/') ? path : `/${path}`;
-  return `${baseUrl}${cleanPath === '/' ? '' : cleanPath}`;
+export function canonical(path = "") {
+  const clean = path.startsWith("/") ? path : `/${path}`;
+  return `${siteConfig.url}${clean === "/" ? "" : clean}`;
 }
 
-/**
- * Generates comprehensive metadata for a page
- */
-export function generateMetadata({
+export function pageMetadata({
   title,
   description,
-  path = '',
+  path = "",
   noIndex = false,
-  images = [],
 }: {
   title: string;
   description: string;
   path?: string;
   noIndex?: boolean;
-  images?: { url: string; alt: string; width?: number; height?: number }[];
 }): Metadata {
-  const canonicalUrl = generateCanonicalUrl(path);
-  const fullTitle = title === siteConfig.name ? title : `${title} | ${siteConfig.name}`;
-  
-  // Default OG image if none provided
-  const ogImages = images.length > 0 
-    ? images 
-    : [{ 
-        url: `${siteConfig.url}/image/og-image.jpg`,
-        alt: siteConfig.name,
-        width: 1200,
-        height: 630,
-      }];
-
   return {
-    title: fullTitle,
+    title,
     description,
-    keywords: siteConfig.keywords,
-    authors: [{ name: siteConfig.author }],
-    creator: siteConfig.author,
-    publisher: siteConfig.author,
-    metadataBase: new URL(siteConfig.url),
-    alternates: {
-      canonical: canonicalUrl,
-    },
-    robots: noIndex 
-      ? { index: false, follow: false }
-      : { index: true, follow: true },
-    openGraph: {
-      type: 'website',
-      locale: siteConfig.locale,
-      url: canonicalUrl,
-      title: fullTitle,
-      description,
-      siteName: siteConfig.name,
-      images: ogImages,
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: fullTitle,
-      description,
-      site: siteConfig.twitterHandle,
-      creator: siteConfig.twitterHandle,
-      images: ogImages.map(img => img.url),
-    },
+    alternates: { canonical: canonical(path) },
+    openGraph: { title, description, url: canonical(path), siteName: siteConfig.name, type: "website" },
+    twitter: { card: "summary_large_image", title, description },
+    robots: noIndex ? { index: false, follow: true } : undefined,
   };
 }
 
-// ============================================================
-// JSON-LD Structured Data Generators
-// ============================================================
+export function jsonLd(data: object) {
+  return { __html: JSON.stringify(data).replace(/</g, "\\u003c") };
+}
 
-/**
- * Organization schema - use in root layout
- */
-export function generateOrganizationSchema() {
+export function softwareApplicationSchema() {
   return {
-    '@context': 'https://schema.org',
-    '@type': 'Organization',
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
     name: siteConfig.name,
     url: siteConfig.url,
-    logo: `${siteConfig.url}/image/logo.png`,
+    applicationCategory: "HealthApplication",
+    operatingSystem: "Web",
     description: siteConfig.description,
-    sameAs: [
-      // Add your social media URLs here
-      // 'https://twitter.com/',
-      // 'https://facebook.com/',
-    ],
+    offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
   };
 }
 
-/**
- * WebSite schema with search action
- */
-export function generateWebSiteSchema() {
+export function breadcrumbSchema(items: { name: string; path: string }[]) {
   return {
-    '@context': 'https://schema.org',
-    '@type': 'WebSite',
-    name: siteConfig.name,
-    url: siteConfig.url,
-    description: siteConfig.description,
-    publisher: {
-      '@type': 'Organization',
-      name: siteConfig.name,
-    },
-  };
-}
-
-/**
- * SoftwareApplication schema for the AI tool
- */
-export function generateSoftwareApplicationSchema() {
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'SoftwareApplication',
-    name: siteConfig.name,
-    applicationCategory: 'HealthApplication',
-    operatingSystem: 'Web',
-    description: siteConfig.description,
-    offers: {
-      '@type': 'Offer',
-      price: '0',
-      priceCurrency: 'USD',
-    },
-    aggregateRating: {
-      '@type': 'AggregateRating',
-      ratingValue: '4.8',
-      ratingCount: '150',
-    },
-  };
-}
-
-/**
- * WebPage schema generator
- */
-export function generateWebPageSchema({
-  title,
-  description,
-  path = '',
-}: {
-  title: string;
-  description: string;
-  path?: string;
-}) {
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'WebPage',
-    name: title,
-    description,
-    url: generateCanonicalUrl(path),
-    isPartOf: {
-      '@type': 'WebSite',
-      name: siteConfig.name,
-      url: siteConfig.url,
-    },
-  };
-}
-
-/**
- * Breadcrumb schema generator
- */
-export function generateBreadcrumbSchema(
-  items: { name: string; path: string }[]
-) {
-  return {
-    '@context': 'https://schema.org',
-    '@type': 'BreadcrumbList',
-    itemListElement: items.map((item, index) => ({
-      '@type': 'ListItem',
-      position: index + 1,
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: items.map((item, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
       name: item.name,
-      item: generateCanonicalUrl(item.path),
+      item: canonical(item.path),
     })),
   };
 }
 
-/**
- * FAQPage schema generator
- */
-export function generateFAQSchema(
-  faqs: { question: string; answer: string }[]
-) {
+export function faqSchema(faqs: { q: string; a: string }[]) {
   return {
-    '@context': 'https://schema.org',
-    '@type': 'FAQPage',
-    mainEntity: faqs.map(faq => ({
-      '@type': 'Question',
-      name: faq.question,
-      acceptedAnswer: {
-        '@type': 'Answer',
-        text: faq.answer,
-      },
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqs.map((f) => ({
+      "@type": "Question",
+      name: f.q,
+      acceptedAnswer: { "@type": "Answer", text: f.a },
     })),
   };
 }
