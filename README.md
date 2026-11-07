@@ -22,7 +22,7 @@ ML service repo: [`ml-model`](../ml-model) · Deep-dive guide: [`docs/HOW_IT_WOR
 - **AI care guide.** A structured morning and evening routine, ingredients to look for, things to avoid, and when to see a dermatologist.
 - **Follow-up chat.** Streaming answers that know your results, capped per analysis.
 - **Try before you upload.** A one-click demo report that needs no photo and no account.
-- **Free tier and passes.** 1 free analysis without an account, 10 with one, plus one-time passes via Dodo Payments. Credits are refunded automatically if an analysis fails.
+- **Free daily allowance.** 1 free analysis without an account, then a daily allowance per signed-in user (default 10 per rolling 24 h). One-time passes via Dodo Payments are built in behind a feature flag (`NEXT_PUBLIC_PAYMENTS_ENABLED`) and turned off until live payments are approved. Failed analyses never count.
 - **History.** Signed-in users can revisit every report. Guest reports move to the account on sign-up.
 - **SEO and accessibility.** Statically generated guides for all 15 concerns, JSON-LD, sitemap, Open Graph image, dark mode, keyboard and screen-reader friendly.
 
@@ -69,6 +69,8 @@ pnpm dev                     # http://localhost:3000
 | `DODO_PAYMENTS_PRODUCT_ID_2DAYS`, `DODO_PAYMENTS_PRODUCT_ID_7DAYS` | for payments | Product ids from the Dodo dashboard |
 | `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_SITE_URL` | | Absolute URLs for redirects and SEO |
 | `IP_HASH_SALT` | recommended | Salt for the hashed guest rate-limit key |
+| `NEXT_PUBLIC_PAYMENTS_ENABLED` | | `false` (default): pricing hidden, daily allowance. `true`: pricing + Dodo checkout |
+| `NEXT_PUBLIC_DAILY_ANALYSIS_LIMIT` | | Analyses per signed-in user per 24 h while payments are off (default 10) |
 | `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST`, `NEXT_PUBLIC_GA_MEASUREMENT_ID` | | Analytics (optional) |
 
 ### Scripts

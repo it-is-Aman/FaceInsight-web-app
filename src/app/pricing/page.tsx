@@ -4,7 +4,8 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { CheckoutButton } from "@/components/pricing/CheckoutButton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { PAID_PLANS, PLANS, type Plan } from "@/lib/plans";
+import { notFound } from "next/navigation";
+import { PAID_PLANS, PAYMENTS_ENABLED, PLANS, type Plan } from "@/lib/plans";
 import { routes } from "@/lib/routes";
 import { pageMetadata } from "@/lib/seo";
 import { cn } from "@/lib/utils";
@@ -50,6 +51,7 @@ function PlanCard({ plan, action }: { plan: Plan; action: React.ReactNode }) {
 }
 
 export default async function PricingPage({ searchParams }: PageProps<"/pricing">) {
+  if (!PAYMENTS_ENABLED) notFound();
   const { checkout } = await searchParams;
   return (
     <>

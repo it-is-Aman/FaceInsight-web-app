@@ -13,6 +13,26 @@ export interface Plan {
   highlighted?: boolean;
 }
 
+/**
+ * Payments feature flag. While false (the default), pricing and checkout are hidden and every
+ * signed-in user gets DAILY_ANALYSIS_LIMIT analyses per rolling 24 hours instead of credit buckets.
+ * NEXT_PUBLIC_ so the UI can hide pricing too. Flip to "true" once Dodo live mode is approved.
+ */
+export const PAYMENTS_ENABLED = process.env.NEXT_PUBLIC_PAYMENTS_ENABLED === "true";
+
+function positiveInt(value: string | undefined, fallback: number) {
+  const n = Number.parseInt(value ?? "", 10);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+}
+
+/** Analyses per signed-in user per rolling 24h when payments are disabled. */
+export const DAILY_ANALYSIS_LIMIT = positiveInt(process.env.NEXT_PUBLIC_DAILY_ANALYSIS_LIMIT, 10);
+
+/** What signing up gets you, in plain words (used in prompts to sign up). */
+export const FREE_ACCOUNT_OFFER = PAYMENTS_ENABLED
+  ? "10 more analyses"
+  : `${DAILY_ANALYSIS_LIMIT} analyses every day`;
+
 /** Unlimited passes are stored with a large numeric limit so credit maths stays uniform. */
 export const UNLIMITED_LIMIT = 1_000_000;
 

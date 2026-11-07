@@ -38,9 +38,11 @@ export default async function HistoryPage() {
         eyebrow="History"
         title="Your skin reports"
         description={
-          credits.unlimitedUntil
-            ? `Unlimited analyses until ${credits.unlimitedUntil.toLocaleDateString("en", { month: "long", day: "numeric" })}.`
-            : `You have ${credits.remaining} ${credits.remaining === 1 ? "analysis" : "analyses"} left.`
+          credits.mode === "daily"
+            ? `${credits.remaining} of ${credits.dailyLimit} analyses left in the last 24 hours. Each one frees up a day after you use it.`
+            : credits.unlimitedUntil
+              ? `Unlimited analyses until ${credits.unlimitedUntil.toLocaleDateString("en", { month: "long", day: "numeric" })}.`
+              : `You have ${credits.remaining} ${credits.remaining === 1 ? "analysis" : "analyses"} left.`
         }
       />
       <div className="container-page py-10">

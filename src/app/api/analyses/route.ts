@@ -2,10 +2,10 @@ import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { Prisma } from "@/generated/prisma/client";
 import { apiError } from "@/lib/api";
-import { consumeCredit, ensureUser, refundCredit } from "@/lib/credits";
+import { consumeCredit, ensureUser, getCreditSummary, refundCredit } from "@/lib/credits";
 import { prisma } from "@/lib/db";
 import { MlError, predict } from "@/lib/ml";
-import { GUEST_DAILY_LIMIT } from "@/lib/plans";
+import { DAILY_ANALYSIS_LIMIT, FREE_ACCOUNT_OFFER, GUEST_DAILY_LIMIT, PAYMENTS_ENABLED } from "@/lib/plans";
 import { getSample } from "@/lib/samples";
 import { claimGuestAnalyses, getIpHash, getOrCreateGuestId, getViewer } from "@/lib/viewer";
 
@@ -51,7 +51,16 @@ export async function POST(req: NextRequest) {
   if (viewer.userId) {
     chargedSubscription = await consumeCredit(viewer.userId);
     if (!chargedSubscription) {
-      return apiError(402, "NO_CREDITS", "You've used all your analyses. Pick a pass to keep going.");
+      if (PAYMENTS_ENABLED) {
+        return apiError(402, "NO_CREDITS", "You've used all your analyses. Pick a pass to keep going.");
+      }
+      const { resetsAt } = await getCreditSummary(viewer.userId);
+      const hours = resetsAt ? Math.max(1, Math.ceil((resetsAt.getTime() - Date.now()) / 3_600_000)) : 24;
+      return apiError(
+        429,
+        "DAILY_LIMIT",
+        `You've used today's ${DAILY_ANALYSIS_LIMIT} analyses. Your next one frees up in about ${hours} ${hours === 1 ? "hour" : "hours"}.`,
+      );
     }
   } else {
     guestId = await getOrCreateGuestId();
@@ -65,7 +74,7 @@ export async function POST(req: NextRequest) {
       },
     });
     if (used >= GUEST_DAILY_LIMIT) {
-      return apiError(401, "SIGN_IN_REQUIRED", "Create a free account to get 10 more analyses.");
+      return apiError(401, "SIGN_IN_REQUIRED", `Create a free account to get ${FREE_ACCOUNT_OFFER}.`);
     }
   }
 

@@ -1,4 +1,5 @@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { FREE_ACCOUNT_OFFER, PAYMENTS_ENABLED } from "@/lib/plans";
 import { faqSchema, jsonLd } from "@/lib/seo";
 
 export const FAQS = [
@@ -16,7 +17,9 @@ export const FAQS = [
   },
   {
     q: "What does it cost?",
-    a: "Your first analysis needs no account. A free account adds 10 analyses plus follow-up questions. Short passes are available if you want to track changes more often.",
+    a: PAYMENTS_ENABLED
+      ? "Your first analysis needs no account. A free account adds 10 analyses plus follow-up questions. Short passes are available if you want to track changes more often."
+      : `It's free. Your first analysis needs no account, and a free account gives you ${FREE_ACCOUNT_OFFER} plus follow-up questions.`,
   },
   {
     q: "What makes a good photo?",

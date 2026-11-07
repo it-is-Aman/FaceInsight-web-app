@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { ChatMessageDTO } from "@/lib/analysis";
 import { readApiError } from "@/lib/api";
+import { FREE_ACCOUNT_OFFER } from "@/lib/plans";
 import { cn } from "@/lib/utils";
 
 export function ChatPanel({
@@ -81,7 +82,7 @@ export function ChatPanel({
         <MessageCircleQuestion className="mx-auto size-8 text-primary" />
         <h2 className="mt-3 text-2xl">Have a question about your results?</h2>
         <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
-          Create a free account to ask follow-up questions, save this report, and get 10 more analyses.
+          Create a free account to ask follow-up questions, save this report, and get {FREE_ACCOUNT_OFFER}.
         </p>
         <SignUpButton mode="modal">
           <Button className="mt-5">Create free account</Button>

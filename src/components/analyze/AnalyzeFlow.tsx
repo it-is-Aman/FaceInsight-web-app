@@ -313,6 +313,7 @@ function ErrorAlert({ error, onRetry, onReset }: { error: FlowError; onRetry: ()
     AI_UNAVAILABLE: <Button size="sm" onClick={onRetry}><RefreshCw /> Try again</Button>,
     INTERNAL: <Button size="sm" onClick={onRetry}><RefreshCw /> Try again</Button>,
     NO_CREDITS: <Button size="sm" asChild><Link href={routes.pricing}>See passes</Link></Button>,
+    DAILY_LIMIT: <Button size="sm" variant="outline" asChild><Link href={routes.history}>View your reports</Link></Button>,
     SIGN_IN_REQUIRED: (
       <Button size="sm" onClick={() => openSignUp({ forceRedirectUrl: routes.analyze })}>
         Create free account
@@ -323,10 +324,11 @@ function ErrorAlert({ error, onRetry, onReset }: { error: FlowError; onRetry: ()
     NO_FACE: "We couldn't find a face",
     SIGN_IN_REQUIRED: "You've used your free check",
     NO_CREDITS: "Out of analyses",
+    DAILY_LIMIT: "Daily limit reached",
     ML_UNAVAILABLE: "The model is starting up",
   };
   return (
-    <Alert variant={error.code === "SIGN_IN_REQUIRED" || error.code === "NO_CREDITS" ? "default" : "destructive"}>
+    <Alert variant={["SIGN_IN_REQUIRED", "NO_CREDITS", "DAILY_LIMIT"].includes(error.code) ? "default" : "destructive"}>
       <AlertCircle />
       <AlertTitle>{titles[error.code] ?? "Something went wrong"}</AlertTitle>
       <AlertDescription>

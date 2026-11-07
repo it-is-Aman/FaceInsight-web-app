@@ -6,6 +6,8 @@ export type ApiErrorCode =
   | "FILE_TOO_LARGE"
   | "SIGN_IN_REQUIRED"
   | "NO_CREDITS"
+  | "DAILY_LIMIT"
+  | "PAYMENTS_DISABLED"
   | "NOT_FOUND"
   | "RATE_LIMITED"
   | "NO_FACE"

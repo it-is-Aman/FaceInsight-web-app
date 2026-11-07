@@ -2,7 +2,13 @@ import "server-only";
 import { clerkClient } from "@clerk/nextjs/server";
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "@/lib/db";
-import { PLANS, UNLIMITED_LIMIT, type PaidPlanId } from "@/lib/plans";
+import {
+  DAILY_ANALYSIS_LIMIT,
+  PAYMENTS_ENABLED,
+  PLANS,
+  UNLIMITED_LIMIT,
+  type PaidPlanId,
+} from "@/lib/plans";
 
 function isUniqueViolation(e: unknown) {
   return e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002";
@@ -52,12 +58,46 @@ export async function ensureUser(userId: string) {
 }
 
 export interface CreditSummary {
+  /** 'daily' = free rolling 24h allowance (payments off); 'credits' = purchasable credit buckets. */
+  mode: "daily" | "credits";
   remaining: number;
+  /** Daily mode: per-day allowance. */
+  dailyLimit: number | null;
+  /** Daily mode: when the next analysis frees up (only set when the limit is reached). */
+  resetsAt: Date | null;
   unlimitedUntil: Date | null;
   nextExpiry: Date | null;
 }
 
+const DAY_MS = 86_400_000;
+
+/** Marker returned by consumeCredit in daily mode; nothing to refund because failed analyses aren't stored. */
+const DAILY_ALLOWANCE = "daily-allowance";
+
+async function dailyUsage(userId: string) {
+  const since = new Date(Date.now() - DAY_MS);
+  const where = { user_id: userId, source: "upload", created_at: { gte: since } };
+  const [used, oldest] = await Promise.all([
+    prisma.analysis.count({ where }),
+    prisma.analysis.findFirst({ where, orderBy: { created_at: "asc" }, select: { created_at: true } }),
+  ]);
+  return { used, oldest: oldest?.created_at ?? null };
+}
+
 export async function getCreditSummary(userId: string): Promise<CreditSummary> {
+  if (!PAYMENTS_ENABLED) {
+    const { used, oldest } = await dailyUsage(userId);
+    const remaining = Math.max(0, DAILY_ANALYSIS_LIMIT - used);
+    return {
+      mode: "daily",
+      remaining,
+      dailyLimit: DAILY_ANALYSIS_LIMIT,
+      resetsAt: remaining === 0 && oldest ? new Date(oldest.getTime() + DAY_MS) : null,
+      unlimitedUntil: null,
+      nextExpiry: null,
+    };
+  }
+
   const subs = await prisma.subscription.findMany({ where: activeWhere(userId) });
   let remaining = 0;
   let unlimitedUntil: Date | null = null;
@@ -72,14 +112,22 @@ export async function getCreditSummary(userId: string): Promise<CreditSummary> {
     }
     if (left > 0 && s.expiry_date && (!nextExpiry || s.expiry_date < nextExpiry)) nextExpiry = s.expiry_date;
   }
-  return { remaining, unlimitedUntil, nextExpiry };
+  return { mode: "credits", remaining, dailyLimit: null, resetsAt: null, unlimitedUntil, nextExpiry };
 }
 
 /**
- * Atomically take one credit, preferring the bucket that expires soonest.
- * Returns the subscription id that was charged, or null if the user has no credits.
+ * Take one analysis from the user's allowance.
+ * - Daily mode: checks the rolling 24h count. Parallel uploads at the very edge of the limit can
+ *   overshoot by the number of in-flight requests, which is acceptable for a free allowance.
+ * - Credits mode: atomically decrements the bucket that expires soonest.
+ * Returns a charge token for refundCredit, or null if nothing is left.
  */
 export async function consumeCredit(userId: string): Promise<string | null> {
+  if (!PAYMENTS_ENABLED) {
+    const { used } = await dailyUsage(userId);
+    return used < DAILY_ANALYSIS_LIMIT ? DAILY_ALLOWANCE : null;
+  }
+
   const candidates = await prisma.subscription.findMany({
     where: activeWhere(userId),
     orderBy: [{ expiry_date: { sort: "asc", nulls: "last" } }, { purchase_date: "asc" }],
@@ -99,6 +147,7 @@ export async function consumeCredit(userId: string): Promise<string | null> {
 
 /** Give a credit back when the analysis failed for reasons that aren't the user's fault. */
 export async function refundCredit(subscriptionId: string) {
+  if (subscriptionId === DAILY_ALLOWANCE) return;
   await prisma.subscription.updateMany({
     where: { subscription_id: subscriptionId, predictions_used: { gt: 0 } },
     data: { predictions_used: { decrement: 1 } },

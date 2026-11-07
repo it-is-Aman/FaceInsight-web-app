@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PAYMENTS_ENABLED } from "@/lib/plans";
 import { routes } from "@/lib/routes";
 import { Logo } from "./Logo";
 
@@ -8,7 +9,7 @@ const columns = [
     links: [
       { label: "Analyze", href: routes.analyze },
       { label: "Skin concerns", href: routes.conditions },
-      { label: "Pricing", href: routes.pricing },
+      ...(PAYMENTS_ENABLED ? [{ label: "Pricing", href: routes.pricing }] : []),
     ],
   },
   {

@@ -1,4 +1,5 @@
 import type { Route } from "next";
+import { PAYMENTS_ENABLED } from "@/lib/plans";
 
 export const routes = {
   home: "/",
@@ -18,6 +19,6 @@ export const routes = {
 export const mainNav = [
   { label: "Analyze", href: routes.analyze },
   { label: "Skin concerns", href: routes.conditions },
-  { label: "Pricing", href: routes.pricing },
+  ...(PAYMENTS_ENABLED ? [{ label: "Pricing", href: routes.pricing }] : []),
   { label: "About", href: routes.about },
 ] as const;

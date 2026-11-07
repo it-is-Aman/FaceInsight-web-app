@@ -18,7 +18,7 @@ function CreditsBadge() {
   if (!credits) return null;
   return (
     <Link
-      href={routes.pricing}
+      href={credits.mode === "daily" ? routes.history : routes.pricing}
       className="hidden items-center gap-1.5 rounded-full border bg-secondary/60 px-3 py-1 text-xs font-medium text-secondary-foreground transition-colors hover:bg-secondary lg:flex"
     >
       <Sparkles className="size-3.5 text-primary" />

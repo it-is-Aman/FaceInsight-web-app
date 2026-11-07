@@ -4,7 +4,10 @@ import { useAuth } from "@clerk/nextjs";
 import { useEffect, useState } from "react";
 
 export interface Credits {
+  mode: "daily" | "credits";
   remaining: number;
+  dailyLimit: number | null;
+  resetsAt: string | null;
   unlimitedUntil: string | null;
   nextExpiry: string | null;
 }
@@ -45,6 +48,7 @@ export function useCredits() {
 }
 
 export function formatCredits(c: Credits): string {
+  if (c.mode === "daily") return `${c.remaining} of ${c.dailyLimit} left today`;
   if (c.unlimitedUntil) {
     return `Unlimited until ${new Date(c.unlimitedUntil).toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
   }

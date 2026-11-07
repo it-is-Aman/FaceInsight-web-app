@@ -5,13 +5,15 @@ import { apiError } from "@/lib/api";
 import { ensureUser } from "@/lib/credits";
 import { dodo, productIdFor } from "@/lib/dodo";
 import { env } from "@/lib/env";
-import { isPaidPlan } from "@/lib/plans";
+import { isPaidPlan, PAYMENTS_ENABLED } from "@/lib/plans";
 
 export const runtime = "nodejs";
 
 const bodySchema = z.object({ plan: z.string().refine(isPaidPlan) });
 
 export async function POST(req: Request) {
+  if (!PAYMENTS_ENABLED) return apiError(404, "PAYMENTS_DISABLED", "Payments are not available yet.");
+
   const { userId } = await auth();
   if (!userId) return apiError(401, "SIGN_IN_REQUIRED", "Please sign in to purchase a pass.");
 
