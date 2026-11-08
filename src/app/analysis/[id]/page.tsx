@@ -18,7 +18,7 @@ import {
 import { conditionName } from "@/lib/conditions";
 import { CHAT_LIMIT_PER_ANALYSIS } from "@/lib/plans";
 import { routes } from "@/lib/routes";
-import { getSample } from "@/lib/samples";
+import { sampleImage } from "@/lib/samples";
 import { getViewer } from "@/lib/viewer";
 
 export const metadata: Metadata = { title: "Your skin report", robots: { index: false } };
@@ -32,7 +32,7 @@ export default async function AnalysisPage({ params }: PageProps<"/analysis/[id]
   const predictions = parsePredictions(analysis);
   const insights = parseInsights(analysis);
   const messages = viewer.userId ? await getChatMessages(id) : [];
-  const sample = analysis.sample_id ? getSample(analysis.sample_id) : undefined;
+  const sampleImg = analysis.sample_id ? sampleImage(analysis.sample_id) : null;
   const date = analysis.created_at.toLocaleDateString("en", { day: "numeric", month: "long", year: "numeric" });
 
   return (
@@ -68,7 +68,7 @@ export default async function AnalysisPage({ params }: PageProps<"/analysis/[id]
         <div className="space-y-4 lg:sticky lg:top-24 lg:self-start">
           <PhotoCard
             analysisId={analysis.id}
-            sampleImage={sample?.image ?? null}
+            sampleImage={sampleImg}
             faceConfidence={analysis.face_confidence}
           />
           {predictions.map((p, i) => (
